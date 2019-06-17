@@ -1,0 +1,1800 @@
+contract testDefS {
+    data {
+        str s1 = `ABC`
+        str s2 = "123"
+    }
+    return s1 + s2
+}
+==== ABC123
+contract testDefZed {
+    return @testDefZo(j:4) + `*` + @testDefZo(i: 7,j:5)
+}
+==== 64*26
+contract testDefZo {
+    data {
+        int j = 1
+        int i = 20/j
+    }
+    return i*3 + j
+}
+==== 61
+contract testDefZ {
+    data {
+        int j 
+        int i = 20/j
+    }
+    return i*3 + j
+}
+==== dividing by zero
+contract testDef {
+    data {
+        int i = qqq(20)
+    }
+}
+==== testDef 3:23: Function qqq(int) hasn't been defined
+contract testDef {
+    data {
+        int i = 20
+    }
+    return i*3
+}
+==== 60
+contract testRead read {
+    return @testReadOK(b:bytes(`123`)) + readFunc(`=`, 313233)
+}
+==== 313233==313233
+contract testReadOK read {
+    data {
+        bytes  b
+    }
+    if Len(b) == 0 {
+        b = bytes(`765`)
+    }
+    return Hex(b)
+}
+==== 373635
+contract testRead read {
+    return testFunc(`qqq`, 222)
+}
+==== testRead 2:31: Calling mutable function or contract from the read contract
+contract testRead read {
+    return @testFBM()
+}
+==== testRead 2:21: Calling mutable function or contract from the read contract
+contract testFBM {
+    return fbmFunc(91.345, true, money(`67643348098766`))
+}
+==== 91.345*true*67643348098766
+contract testF {
+    return testFunc(`qqq`, 222)
+}
+==== qqq222
+contract sha {
+    return Hex(Sha256(bytes(`test`)))
+}
+==== 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+contract Param2 {
+    data {
+        bytes bBytes
+        file  fFile
+    }
+    return Hex(bBytes) + FileName(fFile) + FileMime(fFile) + Hex(FileBody(fFile))
+}
+==== 21275b00myfile.txttext2d2f0020
+contract Param1 {
+    data {
+        int pInt
+        str pStr
+        int noInt
+        money pMoney
+        bool pBool
+        float pFloat
+        bytes pBytes
+    }
+    return str(pInt) + `+` + pStr + `=` + str(noInt) + str(pMoney) + str(pBool) + str(pFloat) + Hex(pBytes)
+}
+==== 123+OK=032562365237623false23.83431325f
+contract FileB {
+    return @FileA(myf: FileInit(`myfile.txt`, `txt`, UnHex(`3256378833`)))
+}
+==== OKmyfile.txt3256378833
+contract FileA {
+    data {
+        file myf
+    }
+    file f1
+    return `OK` + FileName(myf) + Hex(FileBody(f1)) + Hex(FileBody(myf))
+}
+==== OK
+contract BytesE {
+    bytes b = UnHex(`0102000e0d0f`)
+    b[0] = 300
+}
+==== The byte value is greater than 255
+contract BytesFor {
+    int sum
+    bytes b = UnHex(`0102000e0d0f`)
+    for i in b {
+        sum += i
+    }
+    return sum
+}
+==== 45
+contract BytesInd {
+    bytes b = UnHex(`0102abCDe3`)
+    b[3] = 100
+    return b[0] + b[1] + b[3]
+}
+==== 103
+contract BytesInds {
+    bytes b = UnHex(`0102abCDe3`)
+    return b[300]
+}
+==== index out of range index:300 len:5
+contract BytesHex {
+    bytes b = UnHex(`0102abCDe3`)
+    return Hex(b)
+}
+==== 0102abcde3
+contract BytesHexE {
+    bytes b = UnHex(`ab00Th`)
+}
+==== encoding/hex: invalid byte: U+0054 'T'
+contract Bytes {
+    bytes b = bytes(`This ф`)
+    b += bytes(` ok`)
+    return Len(b)
+}
+==== 10
+contract JSONGetMap {
+    obj o = JSONDecode(`{"par1" : {"val3":"Value1", "val2": 32}, 
+         "para": [103, 102, "qqq"], "name": "Name", "Myint": 101 }`)
+    map ret = GetMap(o, `par1`) 
+    return ret
+}
+==== [val2: 32 val3: Value1]
+contract JSONGetArr {
+    obj o = JSONDecode(`{"par1" : {"val3":"Value1", "val2": 32}, 
+         "para": [103, 102, "qqq"], "name": "Name", "Myint": 101 }`)
+    arr ret = GetArray(o, `para`) 
+    ret += `OK`
+    for item in GetArray(o, `Myint`) { 
+        ret += item 
+    }
+    return ret
+}
+==== [103 102 qqq OK 101]
+contract JSONGet {
+    obj o = JSONDecode(`{"par1" : {"val3":"Value1", "val2": 32}, 
+         "para": [101, 102, "qqq"], "name": "Name", "Myint": 101 }`)
+    str ret = GetString(o, `Myint`) + GetString(o, `qqq`) + GetString(o, "par1")
+    return ret
+}
+==== 101map[val2:32 val3:Value1]
+contract JSONIs {
+    obj o = JSONDecode(`{"par1" : {"val3":"Value1", "val2": 32}, 
+         "para": [101, 102, "qqq"], "name": "Name" }`)
+    str ret = str(IsExists(o, `para`)) + str(IsExists(o, `para1`)) +
+              str(IsString(o, `par1`)) + str(IsString(o, `name`))
+    ret += ` ` + str(IsArray(o, `par1`)) + str(IsArray(o, `para`))
+    ret += ` ` + str(IsMap(o, `par1`)) + str(IsMap(o, `para`))
+    return ret
+}
+==== truefalsefalsetrue falsetrue truefalse
+contract JSONArr {
+    obj o = JSONDecode(`{"par1" : {"val3":"Value1", "val2": 32}, 
+         "para": [101, 102, "qqq"] }`)
+    return JSONEncode(o)
+}
+==== {"par1":{"val2":"32","val3":"Value1"},"para":["101","102","qqq"]}
+contract JSONOne {
+    obj o = JSONDecode(`{"par1" : "Value1", "parInt": 101, "parFloat": 3.456, "b": true }`)
+    return JSONEncode(o)
+}
+==== {"b":"true","par1":"Value1","parFloat":"3.456","parInt":"101"}
+contract JSONQ {
+    JSONDecode("This is строка")
+}
+==== invalid character 'T' looking for beginning of value
+contract JSON {
+    JSONDecode(`["This is строка"]`)
+}
+==== json: cannot unmarshal array into Go value of type map[string]interface {}
+contract StrContains {
+    str out
+    str ins = "This is строка"
+    if Contains(ins, `рок`) {
+        out += `1`
+        if !Contains(ins, `iso`) {
+            out += `2`
+        }
+    }
+    out += Join({`one`, `two`, `three`}, `+`)
+    if HasPrefix(ins, `This`) {
+        out += `3`
+        if !HasPrefix(ins, `this`) {
+            out += `4`
+        }
+    }
+    out += ToUpper(TrimSpace("  \r\nqqq\t\r  \n ")) + ToLower("AbCdУ")
+    return out
+}
+==== 12one+two+three34QQQabcdу
+contract StrSusbtr {
+    str ins = "This is строка"
+    return Substr(ins, 6, 5)
+}
+==== s стр
+contract StrRepl {
+    str ins = "This is строка"
+	str out = Replace(ins, `is ст`, `*** `)
+    return Split(Replace(out, ` `, `=`), `=`)
+}
+==== [This *** рока]
+contract Floor { 
+	float it
+	it = Log(Pow(2.0,3.0) + float(2))
+    return Sqrt( float(Round(it) + Floor(it))) + Log10(10.0)
+}
+==== 3
+contract SwitchFloat { 
+    float a = 5.234
+    int ret
+    switch a
+    case 1.0, 2.0 { 
+        ret = 7/0
+    }
+    case 67.0, 5.234 { 
+        ret = 35
+    }
+    default {
+        ret = 3
+    }
+    return ret*2
+}
+==== 70
+contract SwitchStr { 
+    str a = `name`
+    int ret
+    switch a
+    case `first`, `second` { 
+        ret = 7/0
+    }
+    case `third`, `name` { 
+        ret = 14
+    }
+    default {
+        ret = 3
+    }
+    return ret*2
+}
+==== 28
+contract SwitchDef { 
+    str a
+    int ret
+    switch a
+    case `7s`, `xs4` { 
+        ret = 7/0
+    }
+    case `1dxd`, `a5` { 
+        ret = 14
+    }
+    default {
+        ret = 3
+    }
+    return ret*2
+}
+==== 6
+contract Switch3 { 
+    int a = 5
+    int ret
+    switch a
+    case 7, 4 { 
+        ret = 7/0
+    }
+    case 1, 5 { 
+        ret = 14
+    }
+    case ret/0, 3 { 
+        ret = 9
+    }
+    return ret
+}
+==== 14
+contract Switch2 { 
+    int a = 3
+    int ret
+    switch a
+    case 7, 3, ret/0 { 
+        ret = 7
+    }
+    return ret
+}
+==== 7
+contract Switch1 { 
+    int a = 7
+    int ret
+    switch a
+    case 7 { 
+        ret = 10
+    }
+    return ret
+}
+==== 10
+contract Switch { 
+    int a
+    switch a
+    case 2, `20` { 
+    }
+}
+==== Switch 3:12: Unexpected type str of expression; expecting int
+contract Switch { 
+    arr a
+    switch a
+    case 20 { 
+    }
+}
+==== Switch 3:12: switch doesn't support arr.str type
+contract Switch { 
+    int i
+    switch i + 1 
+    case 20 { 
+    } case 10 {}
+}
+==== 5:7: syntax error: unexpected CASE, expecting NEWLINE
+contract Switch { 
+    int i
+    switch i + 1 
+    case 20 { 
+    }
+    case 10 { }
+    default 20 {}
+}
+==== 7:13: syntax error: unexpected INT, expecting LBRACE
+contract Switch { 
+    int i
+    switch i + 1 
+    case {}
+}
+==== 4:11: syntax error: unexpected RBRACE
+contract Switch { 
+    int i
+    switch i + 1 {
+    }
+}
+==== 3:18: syntax error: unexpected LBRACE
+contract Switch { 
+    switch {
+
+    }
+}
+==== 2:14: syntax error: unexpected NEWLINE
+contract ObjF2 { 
+    str s = `string`
+    return objFunc( @{`list`: [10, "245", [0, 1, 2]], Where: {"id": {"$in": ["test", s]}} })
+}
+==== map[list:[10 245 [0 1 2]] Where:map[id:map[$in:[test string]]]]
+contract ObjF { 
+    int i = 27
+    return objFunc( @{id: "me", Where: {"id": {"$eq": i}}, "OOOPS": 3.456 })
+}
+==== map[id:me Where:map[id:map[$eq:27]] OOOPS:3.456]
+contract ObjTest { 
+    int i = 27
+    return objFunc(@{id: 20, Where: {"id": {"$eq": 20}, my: {"$in":[20, 30, 40]},
+      "$and": [id: i, val: "string"]}})
+}
+==== map[id:20 Where:map[id:map[$eq:20] my:map[$in:[20 30 40]] $and:[map[id:27] map[val:string]]]]
+contract FuncTestCust { 
+    return `=` + testFunc(`start`, 100) + `ok`
+}
+==== =start100ok
+contract FuncCust { 
+    voidFunc(`ok`)
+}
+==== errorVoidFunc
+contract FuncCust { 
+    func voidFunc(str s) {
+
+    }
+    return `ok`
+}
+==== FuncCust 4:5: Function voidFunc has already been defined
+contract EnvKey { 
+    return `key=` + $key 
+}
+==== key=0122afcd34
+contract Env { 
+    return $block + $ecosystem
+}
+==== 8
+contract Env { 
+    return $test
+}
+==== Env 2:12: Environment variable $test is undefined
+contract callFDCall { 
+    str out = @callFD(f: 10.33, m: money(10.67))
+    if money(out) <= money(20) {
+        out += `1`
+    }
+    if money(out) >= money(200) {
+        out += `2`
+    }
+    if money(out) == money(2012) {
+        out += `3`
+    }
+    if money(out) != money(20123) {
+        out += `4`
+    }
+    return out
+}
+==== 20123
+contract callFD { 
+    data {
+        float f 
+        money m
+    }
+    if f == 0.0 {
+        m = money(5)
+        f = 5.0
+    }
+    return m + money(f)
+}
+==== 10
+contract callDArr { 
+    money d = money(7)
+    arr.money am = {money(123), d}
+    am += d
+    d += money(33)
+    am += d
+    return am
+}
+==== [123 7 7 40]
+contract callDMA { 
+    money m = money(123)
+    money d = money(`-7899`)
+    m += d
+    m -= money(224)
+    m *= money(3)
+    m /= money(1000)
+    return m
+}
+==== -24
+contract callDMZ { 
+    money m = money(123)
+    return m/money(0.0)
+}
+==== dividing by zero
+contract callDM { 
+    money m = money(123)
+    return -m * money(`200`)/money(100.0)
+}
+==== -246
+contract callDE { 
+    return money("12345string")
+}
+==== can't convert 12345string to decimal
+contract callD { 
+    money m = money(1234567)
+    return m + money(7654321.7234) - money("123456789012345678908888888.678")
+}
+==== -123456789012345678900000000
+contract callVAFloat3 { 
+    float f = 2223.333
+    return int(f) + int(5.5) + int(-10.9)
+}
+==== 2218
+contract callVAFloat2 { 
+    float f = 2.3
+    return f + float(345444)
+}
+==== 345446.3
+contract callVAFloat1 { 
+    float f = 2.3
+    float g = 2.0
+    f += 22.4
+    f/=g
+    f -= 2.35
+    f *= 3.0
+    return f
+}
+==== 30
+contract callVAFloatZ { 
+    float f g
+    f = 5.0
+    return f/g
+}
+==== dividing by zero
+contract callVAFloat { 
+    float f g
+    f = 3.1415
+    g = f*2.0/3.0
+    return f+4.2*g
+}
+==== 11.937700000000001
+contract callAFloat { 
+    arr.float af = {1.6, -2.2, 0.0, -11.12}
+    float sum
+    for f in af {
+        sum = sum - f
+    }
+    return sum
+}
+==== 11.719999999999999
+contract callFloat { 
+    return 1.0 + 2.56 + 0.344 + -10.5
+}
+==== -6.596
+contract myIMe1 {
+    map.str s = {`b`:`qq`, `a`:`ee`}
+    s["0"] = `ww`
+    return s
+} 
+====  [0: ww a: ee b: qq]
+contract myIMA {
+    str d = "end"
+    return {`тест`:{`a`,"b"}, `test`:{"c", d}}
+} 
+==== [test: [c end] тест: [a b]]
+contract myIMe {
+    str s
+    return {`b`:1, `a`:s}
+} 
+====  myIMe 3:24: Unexpected type of the parameter; expecting int
+contract myIM {
+    return {`b`:1, 
+    `a`:99, `d`:
+    77, `c`: 4}
+} 
+==== [a: 99 b: 1 c: 4 d: 77]
+contract myIAE {
+    arr a = {1, 2, 3, 7 }
+} 
+==== myIAE 2:27: Operator arr.str=arr.int has not been found
+contract myIAA {
+    int sum
+    int b = 9
+    for v in {{0, 1, 2, ?(5>3, 3, 10)},
+              {4, 5, 3+3, 7}, {8, b, 10}} {
+        for i in v {
+            sum += i
+        }
+    }
+    return sum
+} 
+==== 55
+contract myIA {
+    return {1, 2, 
+    3, 7}
+} 
+==== [1 2 3 7]
+contract myIAS {
+    return {`a`, `b`, `c`, `d`}
+} 
+==== [a b c d]
+contract myIAS {
+    return {`a`, 1, `c`, `d`}
+} 
+==== myIAS 2:18: Unexpected type of the parameter; expecting str
+contract myIA {
+    return {}
+} 
+==== 2:13: syntax error: unexpected RBRACE
+contract myConA {
+    arr.map am
+    map m1 m2
+    m1[`a`] = `a1`
+    m1[`b`] = `b1`
+    m2[`c`] = `a2`
+    m2[`d`] = `b2`
+    am += m1
+    am += m1
+    am += m2
+    str out
+    for m, i in am {
+        if i == 1 {
+            continue
+        }
+        out += str(i)
+        for mi, k in m {
+            if k == `b` {
+                out += `!`
+                continue
+            }           
+            out += mi + ` ` + k  
+        }
+        out += ` +`
+    }
+    return out
+} 
+==== 0a1 a! +2a2 cb2 d +
+contract myEq {
+    str s = `test 1`
+    str out d
+    if s == `test 1` {
+        out += `1`
+    }
+    if s != `test 1` {
+        out += `x`
+    }
+    d = s
+    if `test2` != s {
+        out += `2`
+    }
+    if d == s {
+        out += `3`
+    } else {
+        out += `y`
+    }
+    return out
+} 
+==== 123
+contract myCon {
+    int sum
+    for i in 0..12 {
+        if i == 10 {
+            continue
+        }
+        sum += i
+    }
+    return sum
+} 
+==== 68
+contract myConW {
+    int sum i
+    while i <=12 {
+        if i == 8 {
+            i += 2
+            continue
+        }
+        sum += i
+        i += 1
+    }
+    return sum
+} 
+==== 61
+contract myCon {
+    int i
+    if i == 10 {
+        continue
+    }
+} 
+==== myCon 4:9: continue must be inside of while or for
+contract myBrw {
+    int sum
+    int i
+    while  i<10 {
+        int j
+        while j < 20 {
+            sum += j
+            if j + i == 3 {
+                break
+            }
+            j+=1
+        }
+        sum += i
+        if i == 3 {
+            break
+        }
+        i += 1
+    }
+    return sum
+} 
+==== 16
+contract myBr {
+    int sum
+    for i in 0..20 {
+        sum += i
+        if i == 10 {
+            break
+        }
+    }
+    return sum
+} 
+==== 55
+contract myBr {
+    int i
+    if i == 10 {
+        break
+    }
+} 
+==== myBr 4:9: break must be inside of while or for
+contract myForCall { 
+    int sum
+    for i in sum..11-1 {
+        sum += i
+    }
+    return sum
+}
+==== 55
+contract myForCall {
+    arr a 
+    for i in a..20 {
+    }
+}
+==== myForCall 3:14: Unexpected type arr.str of expression; expecting int
+contract myForCall { 
+    for i in 0..`10` {
+    }
+}
+==== myForCall 2:17: Unexpected type str of expression; expecting int
+contract myKeyserCall { 
+    return int(`45ght`)
+}
+==== cannot convert 45ght to int
+contract myformapCall { 
+    map.int ai
+    int sum k
+    ai[`4`] = 10
+    ai[`7`] = 20
+    for i in ai {       
+        sum += i
+    }
+    ai[`11`] = 3
+    for i, j in ai {       
+        k += 1
+        sum += i + int(j)*k
+    }
+    return sum
+}
+==== 103
+contract myKeysmapCall { 
+    map.int ai
+    ai[`z`] = 20
+    ai[`a`] = 20
+    ai[`тест`] = 20
+    ai[`5`] = 10
+    str out
+
+    for v, i in Keys(ai) {       
+        if i > 0 {
+            out += ` `
+        }
+        out += v
+    }
+    return out
+}
+==== 5 a z тест
+contract myKeyseCall { 
+    map.str ai
+    for i, j in ai {
+        int k = 1/0
+    }
+    return Keys(ai)
+}
+==== []
+contract myforCall { 
+    arr.int ai
+    int sum
+    ai += 10
+    ai += 20
+    for i in ai {       
+        sum += i
+    }
+    ai += 3
+    for i, j in ai {       
+        sum += i + j
+    }
+    return sum
+}
+==== 66
+contract myforCall { 
+    arr.int ai
+    int sum i
+    for i in ai {       
+    }
+}
+==== myforCall 5:5: Variable i has already been defined
+contract myfCall { 
+    for my in 10 {       
+    }
+}
+==== myfCall 2:15: Unexpected type int of expression; expecting array, bytes or map
+contract myfCall { 
+    for my {       
+    }
+}
+==== 2:12: syntax error: unexpected LBRACE, expecting COMMA or IN
+contract myfCall { 
+    for 10 {       
+    }
+}
+==== 2:9: syntax error: unexpected INT, expecting IDENT
+contract myeCall { 
+    map bipq
+    arr a
+    str q = `qqq`
+    a += q
+    str s = `my`
+    bipq[`a`]= `000`
+    q += `www`
+    s += bipq[`a`]
+    s += a[0]
+    return s
+}
+==== my000qqqwww
+contract myeqmapCall { 
+    map bipq
+    str s = `>>`
+    bipq[`a`]= `000`
+    bipq[`a`] = s
+    s += `<<`
+    bipq[`b`] = s
+    return bipq
+}
+==== [a: >> b: >><<]
+contract myMapCall { 
+    map bipq
+    str s = `>>`
+    bipq[`a`]= `000`
+    bipq[`b`]= `111`
+    bipq[`c`]= @myMap(bip: bipq, S: s)
+    bipq[`d`]= s
+    return bipq
+}
+==== [a: 000 b: 111 c: 6 d: >>]
+contract myMap { 
+    data {
+       map bip
+       str S
+    }
+    if Len(bip) > 0 {
+        bip[`aa`] = `checked`
+    }
+    S += `<<`
+    bip[`b`] = `sent`
+    return 2*Len(bip)
+}
+==== 2
+contract mapArrtOut { 
+    map bip
+    str s = `Ooops`
+    str a = `x`
+    bip[`a`] = s
+    bip[`b`] = a
+    bip[`a`] = `0`
+    s = `1`
+    a = s
+    return bip[`a`] + bip[`b`] + s + a
+}
+==== 0x11
+contract mapArrArrOut { 
+    map.map bip
+    map a1 a2
+    bip[`a`] = a1
+    a1[`b`] = `qqq`
+    a2[`c`] = `fff`
+    bip[`d`] = a2
+    a2[`e`] = `zzz`
+    bip[`d`][`e`] = `finish`
+    bip[`a`][`b`] = `start`
+    a1[`f`]= `ok`
+    return bip
+}
+==== [a: [b: start f: ok] d: [c: fff e: finish]]
+contract mapArrISOut { 
+    map bip
+    str s = `123`
+    bip[`a`] = `ppp`
+    bip[`b`] = `qqq`
+    bip[`a`] = bip[`a`] + `22`
+    bip[`b`] = s
+    return bip
+}
+==== [a: ppp22 b: 123]
+contract mapArrIndaOutzz { 
+    map.int bip
+    return bip[`5`]
+}
+==== Key 5 doesn't exist
+contract mapArrIndaOut { 
+    map.int bip
+    str ind = `Oooops`
+    bip[`Oooops`]= 10
+    return bip[ind]
+}
+==== 10
+contract assignMapIndex { 
+    map.int imap
+    imap[`а`] = 1
+    imap[`б`]= 2
+    imap[`а`] = 3
+    imap[`б`] = 4
+    return imap
+}
+==== [а: 3 б: 4]
+contract mapArrs { 
+    map imap
+    str b = `zxcv`
+    str a = `asdf`
+    imap[`a`] = a
+    imap[`b`] = b
+    a = `rtyu`
+    b = a
+    a = `qwer`
+    imap[`c`] = b
+    return imap
+}
+==== [a: asdf b: zxcv c: rtyu]
+contract mapArrInt { 
+    map.int b
+    b[`a`] = 3
+    b[`b`] = 4
+    map.map.int c 
+    c[`a`] = b
+    c[`b`] = b
+    b[`c`] = 5
+    return c[`a`][`a`] + 2*c[`a`][`b`] + 3*c[`b`][`a`] + 4*c[`b`][`b`] + c[`a`][`c`] +  c[`b`][`c`]
+}
+==== 46
+contract mapArrStrOut { 
+    map.int bip
+    bip[`a`] = 7
+    return bip[`a`] + bip[`b`]
+}
+==== Key b doesn't exist
+contract mapArrIND { 
+    func get() map {
+        map b
+        b[`0`] = `q`
+        b[`1`] = `w`
+        return b
+    }
+    map c = get()
+    return c[`1`] + c[`0`] + c[`1`]
+}
+==== wqw
+contract mapArrStrb { 
+    map.int bip
+    return bip[true]
+}
+==== mapArrStrb 3:20: Unexpected type bool of expression; expecting str
+contract mapArrStrb { 
+    map.int b
+    return b["my"][1]
+}
+==== mapArrStrb 3:18: Type int doesn't support indexing
+contract mapArrStra { 
+    int b
+    return b[0]
+}
+==== mapArrStra 3:15: Type int doesn't support indexing
+contract mapArrStra { 
+    return a[1]
+}
+==== mapArrStra 2:15: Variable a hasn't been defined
+contract mapArrStrz { 
+    map.map.map.map a
+}
+==== mapArrStrz 2:5: Invalid type
+contract mapArrStr { 
+    map.map a
+    int i
+    while i < 3 {
+        map b
+        int j
+        while j < 3 {
+            b[str(j)]= str(j+7+i)
+            j += 1
+        }
+        a[str(i)] = b
+        i += 1
+    }
+    return a
+}
+==== [0: [0: 7 1: 8 2: 9] 1: [0: 8 1: 9 2: 10] 2: [0: 9 1: 10 2: 11]]
+contract mapStr1 { 
+    map a
+    a[`a`] = "17"
+    a[`b`]= "AXв"
+    a[`c`] = str(Len(a))
+    return a
+}
+==== [a: 17 b: AXв c: 2]
+contract mapInt { 
+    map.int a
+    a[`a`] = 10
+    a[`b`]= 123
+    a[`a`] = Len(a)
+    return a
+}
+==== [a: 2 b: 123]
+contract mapLen { 
+    map.int a
+    map b
+    a[`0`]= 10
+    b[`1`]= "my str"
+    return Len(a) + Len(b)
+}
+==== 2
+contract mapInt { 
+    map.int a
+    func dfunc(map e) {}
+    dfunc(a)
+}
+==== mapInt 4:12: Function dfunc(map.int) hasn't been defined
+contract mapStr { 
+    data {
+        map Par
+    }
+    map a
+    map.str d
+    func dfunc(map e) {}
+    func b(map.str c) str { 
+        return "OK"
+    }
+    b(a)
+    dfunc(d)
+    return b(Par)
+}
+==== OK
+contract mapCNT { 
+    map.map.map.int a
+}
+==== 
+contract mapCNT { 
+    map.map.map.map.int a
+}
+==== mapCNT 2:5: Invalid type
+contract myeqCall { 
+    arr bipq
+    str s = `>>`
+    bipq += `000`
+    bipq[0] = s
+    s += `<<`
+    bipq += s
+    return bipq
+}
+==== [>> >><<]
+contract myStrCall { 
+    str s = `>>`
+    str a = s
+    s += `===`
+    return a + s
+}
+==== >>>>===
+contract myArrCall { 
+    arr bipq
+    str s = `>>`
+    bipq += `000`
+    bipq += `111`
+    bipq += @myArr(bip: bipq, S: s)
+    bipq += s
+    return bipq
+}
+==== [000 111 6 >>]
+contract myArr { 
+    data {
+       arr bip
+       str S
+    }
+    if Len(bip) > 0 {
+        bip[0] = `checked`
+    }
+    S += `<<`
+    bip += `sent`
+    return 2*Len(bip)
+}
+==== 2
+contract arrArrtOut { 
+    arr bip
+    str s = `Ooops`
+    str a = `x`
+    bip += s
+    bip += a
+    bip[0] = `0`
+    s = `1`
+    a = s
+    return bip[0] + bip[1] + s + a
+}
+==== 0x11
+contract arrArrArrOut { 
+    arr.arr bip
+    arr a1 a2
+    bip += a1
+    a1 += `qqq`
+    a2 += `fff`
+    bip += a2
+    a2 += `zzz`
+    bip[1][1] = `finish`
+    bip[0][0] = `start`
+    a1 += `ok`
+    return bip
+}
+==== [[start ok] [fff finish]]
+contract arrArrISOut { 
+    arr bip
+    str s = `123`
+    bip += `ppp`
+    bip += `qqq`
+    bip[0] = bip[0] + `22`
+    bip[1] = s
+    return bip
+}
+==== [ppp22 123]
+contract arrArrIndaOutes { 
+    arr.int bip
+    bip[-3] = 2
+}
+==== index out of range index:-3 len:0
+contract arrArrIndaOutzz { 
+    arr.int bip
+    return bip[-5]
+}
+==== index out of range index:-5 len:0
+contract arrArrIndaOut { 
+    arr.int bip
+    int ind = 0
+    bip += 10
+    return bip[ind]
+}
+==== 10
+contract arrArrIndOut { 
+    arr.int bip
+    bip += 1
+    bip[10] = 2
+}
+==== index out of range index:10 len:1
+contract assignIndex { 
+    arr.int iarr
+    iarr += 1
+    iarr += 2
+    iarr[0] = 3
+    iarr[1] = 4
+    return iarr
+}
+==== [3 4]
+contract arrArrs { 
+    arr iarr
+    str b = `zxcv`
+    str a = `asdf`
+    iarr += a
+    iarr += b
+    a = `rtyu`
+    b = a
+    a = `qwer`
+    iarr += b
+    return iarr
+}
+==== [asdf zxcv rtyu]
+contract arrArrInt { 
+    arr.int b
+    b += 3
+    b += 4
+    arr.arr.int c 
+    c += b
+    c += b
+    b += 5
+    return c[0][0] + 2*c[0][1] + 3*c[1][0] + 4*c[1][1] + c[0][2] +  c[1][2]
+}
+==== 46
+contract arrArrStrOut { 
+    arr.int bip
+    bip += 1
+    return bip[0] + bip[1]
+}
+==== index out of range index:1 len:1
+contract arrArrIND { 
+    func get() arr {
+        arr b
+        b += `q`
+        b += `w`
+        return b
+    }
+    arr c = get()
+    return c[1] + c[0] + c[1]
+}
+==== wqw
+contract arrArrStrb { 
+    arr.int bip
+    return bip[true]
+}
+==== arrArrStrb 3:20: Unexpected type bool of expression; expecting int
+contract arrArrStrb { 
+    arr.int b
+    return b[0][1]
+}
+==== arrArrStrb 3:15: Type int doesn't support indexing
+contract arrArrStra { 
+    int b
+    return b[0]
+}
+==== arrArrStra 3:15: Type int doesn't support indexing
+contract arrArrStra { 
+    return a[1]
+}
+==== arrArrStra 2:15: Variable a hasn't been defined
+contract arrArrStrz { 
+    arr.arr.arr.arr a
+}
+==== arrArrStrz 2:5: Invalid type
+contract arrArrStr { 
+    arr.arr a
+    int i
+    while i < 3 {
+        arr b
+        int j
+        while j < 3 {
+            b += str(j+7+i)
+            j += 1
+        }
+        a += b
+        i += 1
+    }
+    return a
+}
+==== [[7 8 9] [8 9 10] [9 10 11]]
+contract arrStr1 { 
+    arr a
+    a += "17"
+    a += "AXв"
+    a += str(Len(a))
+    return a
+}
+==== [17 AXв 2]
+contract arrInt { 
+    arr.int a
+    a += 10
+    a += 123
+    a += Len(a)
+    return a
+}
+==== [10 123 2]
+contract arrLen { 
+    arr.int a
+    arr b
+    a += 10
+    b += "my str"
+    return Len(a) + Len(b)
+}
+==== 2
+contract arrInt { 
+    arr.int a
+    func dfunc(arr e) {}
+    dfunc(a)
+}
+==== arrInt 4:12: Function dfunc(arr.int) hasn't been defined
+contract arrStr { 
+    data {
+        arr Par
+    }
+    arr a
+    arr.str d
+    func dfunc(arr e) {}
+    func b(arr.str c) str { 
+        return "OK"
+    }
+    b(a)
+    dfunc(d)
+    return b(Par)
+}
+==== OK
+contract arrCNT { 
+    arr.arr.arr.int a
+}
+==== 
+contract arrCNT { 
+    arr.arr.arr.arr.int a
+}
+==== arrCNT 2:5: Invalid type
+contract arrInt { 
+    func a() int.int {
+    }
+}
+==== arrInt 2:14: Invalid type
+contract arrInt { 
+    func a(int.int b) {
+    }
+}
+==== arrInt 2:12: Invalid type
+contract arrInt { 
+    data {
+        int.int b
+    }
+}
+==== arrInt 3:9: Invalid type
+contract arrInt { 
+    int.int b
+}
+==== arrInt 2:5: Invalid type
+contract callName { 
+    str s = `ok`
+    return @myData(Name: "Only Name") + s + @myData(Value: 17)
+}
+==== Only Name 0okEmpty name 9
+contract callData { 
+    return @myData(Name: "My Data", Value: 50)
+}
+==== My Data 50
+contract callData { 
+    return @myData(Name: "My Data", Value: "string")
+}
+==== callData 2:52: Unexpected type of the parameter; expecting int
+contract callData { 
+    return @myData(Name: "My Data", Value2: 50)
+}
+==== callData 2:47: Contract doesn't have Value2 parameter
+contract callData { 
+    return @myDIV(Name: "My Data", Value: 50)
+}
+==== callData 2:45: Contract myDIV doesn't have parameters
+contract myData { 
+    data { 
+        int Value
+        str Name 
+    }
+    str s = ` `
+    if Len(Name) == 0 {
+        Name = `Empty name`
+        Value = 9
+    }
+    return Name + s + str(Value)
+}
+==== Empty name 9
+contract myCallDIV {
+    @myDIV()
+}
+==== dividing by zero
+contract myCall {
+    return @mySLem() + @mySLem()
+}
+==== 123456123456
+contract myCall {
+    @mySLem2()
+}
+==== myCall 2:14: Contract mySLem2 hasn't been found
+contract mySVar {
+    str a
+    str s = "start" + a
+    s += ` `
+    a = `!`
+    return s + s + a
+}
+==== start start !
+contract myLem {
+    return Len(`stri\ning` + "start\nТест" + "first
+second")
+}
+==== 36
+contract mySLem {
+    return `123` + "456"
+}
+==== 123456
+contract mystr3 {
+    return `stri\g т\""ест 123 + - /?`
+}
+==== stri\g т\""ест 123 + - /?
+contract mystr2 {
+    return "string \t \" \\\" 123 456"
+}
+==== string 	 " \" 123 456
+contract mystr1 {
+    return "string \t \" \\\""
+}
+==== string 	 " \"
+contract mystr {
+    return "st\king"
+}
+==== 2:12: invalid syntax
+contract myFunc1 {
+    func name(int a) int {
+        int b = 10
+        int c  = 3
+        if a == 2 {
+            return (b+c)*3
+        }
+        return (b + c + a)
+    }
+    return  name(3) + 2*name(2) 
+}
+==== 94
+contract myparFunc {
+    func name_int(int a) int {
+        return a + 10
+    }
+    return name_int(true)
+}
+==== myparFunc 5:25: Function name_int(bool) hasn't been defined
+contract myparFunc {
+    int c
+    func name_int(int a b) int {
+        c+=1
+        return (b-a + 1)*c
+    }
+    return name_int(3,4) + name_int(1,4)
+}
+==== 10
+contract myEmpaFunc {
+    func name() int {
+        return true
+    }
+}
+==== myEmpaFunc 3:21: Function must return int
+contract myEmpaFunc {
+    func name() int {
+        return 
+    }
+}
+==== myEmpaFunc 3:17: Function must return a value
+contract myEmpaFunc {
+    int a
+    func name() {
+        return a
+    }
+}
+==== myEmpaFunc 4:18: Function cannot return a value
+contract myEmpFunc {
+    int a
+    func name() {
+        a += 3
+        return
+    }
+    name()
+    return a 
+}
+==== 3
+contract myAFunc {
+    int a
+    func name() int {
+        a += 1
+    }
+}
+==== myAFunc 5:5: Function must return a value
+contract myAFunc {
+    int a
+    func name() int {
+        a += 1
+        return  a * 2
+    }
+    return name() + name() * name()
+}
+==== 26
+contract myAFunc {
+    func main() int {
+        func sub() {
+        }
+    }
+}
+==== myAFunc 4:9: Function cannot be defined inside another function
+contract myFunc {
+    if true {
+        int a
+        func name() {
+            a += 1
+            a *= 2
+        }
+        name()
+        name()
+        return a
+    }
+}
+==== 6
+contract myFunc {
+    name()
+}
+==== myFunc 2:10: Function name() hasn't been defined
+contract myFunc {
+    func name() {
+    }
+    func name() {
+    }
+}
+==== myFunc 5:5: Function name has already been defined
+contract myQuest {
+    int i
+    i += 1 + ?(i==0, 7+2, 2/0)
+    i += 2 + ?(i<0, 2/0, 3)
+    return i
+}
+==== 15
+contract myQuest {
+    return ?(true, 7+2, false)
+}
+==== myQuest 2:30: Different types of ?
+contract myCycle {
+    int i
+    while i < 1000 {
+        int j k
+        j = i 
+        k = i*2
+        if k > i {
+            int x = j
+            j = x + 2
+        }
+        i += 1
+    }
+    return i
+}
+==== 1000
+contract myORAND {
+    bool b = 10 > 1 || 2/0 == 3
+    if !b {
+        return false
+    }
+    b = b && 1 > 5 && 6/0 == 7
+    b = !b && true && 5==5
+    return b
+}
+==== true
+contract myIf {
+    int ret = 1
+    if ret == 1 {
+        ret += 2
+    }
+    if ret < 3 {
+        ret /= 2
+    } else {
+        ret += 5
+    }
+    if false {
+        ret *=3
+    } elif ret < 10 {
+        ret *= 2
+    }
+    if ret < 10 {
+        ret *=3
+    } elif ret != 16 {
+        ret *= 2
+    } elif ret == 16 {
+        ret += 4
+    } elif ret >5 {
+        ret/=3
+    } elif ret == 5 {
+        ret -= 20
+    } else {
+        ret *= 0
+    }
+    if ret < 10 {
+        ret *=3
+    } elif ret == 16 {
+        ret *= 2
+    } elif false {
+        ret += 4
+    } else {
+        ret *= 2
+    }
+    return ret
+} 
+==== 40
+contract myIf {
+    int ret
+    if true  {
+    } elif ret {
+    }
+} 
+==== myIf 4:12: Unexpected type int of expression; expecting bool
+contract myIf {
+    int ret
+    if ret  {
+    }
+} 
+==== myIf 3:8: Unexpected type int of expression; expecting bool
+contract myFact {
+    int f = 1
+    int i = 1
+    while i <= 16 {
+        f *= i
+        i+=1
+    }
+    return f
+} 
+==== 20922789888000
+contract myWhile {
+    int i sum
+    while i < 5 {
+        int j
+        while j <= i {
+            sum += j
+            j+=2
+        }
+        i+=1
+    }
+    return sum
+} 
+==== 10
+contract myVar {
+    int myVar
+    while false {
+        int myVar
+    }
+} 
+==== myVar 4:19: Variable myVar has already been defined
+contract myGT {
+    while 10 + 5 {
+    }
+} 
+==== myGT 2:18: Unexpected type int of expression; expecting bool
+contract myGT {
+    while 10 {
+    }
+} 
+==== myGT 2:11: Unexpected type int of expression; expecting bool
+contract myGT {
+    return 5 > 10
+} 
+==== false
+contract myGE {
+    return 6 >= 6
+} 
+==== true
+contract myLT {
+    return 5 < 10
+} 
+==== true
+contract myLE {
+    return 6 >= 6
+} 
+==== true
+contract myNE2 {
+    return 5 != 10
+} 
+==== true
+contract myNE1 {
+    return 8+2 != 10
+} 
+==== false
+contract myEQ2 {
+    return 5 == 10
+} 
+==== false
+contract myEQ1 {
+    int a = 10
+    return a == 10
+} 
+==== true
+contract myVarSetAB {
+    int a
+    a += true
+} 
+==== myVarSetAB 3:15: Operator int+=bool has not been found
+contract myMod2 {
+    int a = 21 % 0
+} 
+==== dividing by zero
+contract myMod {
+    int a = 21
+    a %= 2-2
+} 
+==== dividing by zero
+contract myVarAssign {
+    int a = 7
+    int b = a + 3
+    a += 8
+    b -= 5
+    a *= b + 5
+    b /=5
+    a %= 17
+    return a + b
+} 
+==== 15
+contract myVarSetAB {
+    int a = 10
+    int b = 15
+    b = b + 1
+    return a + b + a % 3
+} 
+==== 27
+contract myVarSet {
+    int a
+    a = 23
+    return (a - 3)/4 + a
+} 
+==== 28
+contract myVar {
+    int a
+    {
+        return 20
+    }
+    return a
+} 
+==== 3:5: syntax error: unexpected LBRACE, expecting RBRACE
+contract myVar {
+    int a
+    return (a + 3)*2
+} 
+==== 6
+contract myNoVar {
+    return 1 + b
+} 
+==== myNoVar 2:16: Variable b hasn't been defined
+contract myVarE1 {
+    int abc 
+    int abc
+} 
+==== myVarE1 3:13: Variable abc has already been defined
+contract myVarE {
+    int abc abc
+} 
+==== myVarE 2:17: Variable abc has already been defined
+contract myDIV {
+    return 100/(15-0xf)
+} 
+==== dividing by zero
+contract myMULF {
+    return 2*false
+} 
+==== myMULF 2:14: Operator int*bool has not been found
+contract myMUL {
+    return 0xFF - 2*(50-16) + (20+52)/3 + (20-5 + 7)*3/0x2 + 8/3
+} 
+==== 246
+contract myAdd {
+    return 0xFF + 1 + -100 - 56 - -1000
+} 
+==== 1100
+contract myPush64 {
+    return 0xFFFFFFFFFF
+} 
+==== 1099511627775
+contract myPushn64 {
+    return 0x10AbFc32
+} 
+==== 279706674
+contract myPushn3212 {
+    return -2147483648
+} 
+==== -2147483648
+contract myPushn321 {
+    return -1
+} 
+==== -1
+contract myPushn32 {
+    return 2147483647
+} 
+==== 2147483647
+contract myPush32 {
+    return (1000123)
+} 
+==== 1000123
+contract myNOTTR {
+    return !true
+} 
+==== false
+contract myTR {
+    return true
+} 
+==== true
+contract myE {
+    return -true
+} 
+==== myE 2:13: Operator -bool has not been found
+contract myS {
+    return -100
+} 
+==== -100
+contract my777 {
+    return 777
+} 
+==== 777
+contract Empty {
+    return
+} 
+==== 
+contract my {
+    return
+} 
+==== Contract my has already been defined
+contract my {
+    10
+} 
+==== 2:5: syntax error: unexpected INT, expecting RBRACE
+contract my {
+} 
+==== 
+contract my {
+} 
+contract myNext {
+} 
+==== 3:1: syntax error: unexpected CONTRACT, expecting NEWLINE
+myvar contract {
+} 
+==== 1:1: syntax error: unexpected IDENT, expecting CONTRACT
+contract {
+} 
+==== 1:10: syntax error: unexpected LBRACE, expecting IDENT
+/* 
+   ==== expecting result or error text
+   ==== gas $ expecting result or error text
+*/
+==== 4:3: syntax error: unexpected $end, expecting CONTRACT
+
