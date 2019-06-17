@@ -65,12 +65,14 @@ func (rt *Runtime) Run(code []Bcode, params []int64, gasLimit int64) (string, in
 	newCount()
 	defer delCount(true)
 	Vars := make([]int64, 0, 32)
-	stack := make([]int64, 100)
+	stack := make([]int64, 100) // 运行栈
 	pars := make([]int64, 0, 32)
 	calls := make([]int64, 1000)
 
 	// top the latest value
 	if code[0] == DATA {
+		// 执行字节码之前，恢复保存在代码序列最前面的数据
+		// data切片中保存的是字符串
 		length := int64(uint64(code[1]))
 		data = make([]byte, length<<1)
 		length += 2
@@ -82,50 +84,55 @@ func (rt *Runtime) Run(code []Bcode, params []int64, gasLimit int64) (string, in
 		}
 	}
 main:
+	// i起到指针指针的作用
 	for i < length {
 		gas++
 		if gas > gasLimit {
 			return ``, gas, fmt.Errorf(errGasLimit)
 		}
 		switch code[i] {
-		case PUSH16:
-			i++
-			top++
-			stack[top] = int64(code[i])
-		case PUSH32:
-			i += 2
+		case PUSH16: // 在栈顶保存16位数据
+			/* code[i]保存的是指令本身 */
+			i++                         // 指令指针+1，+1处保存的是操作数
+			top++                       // 栈指针+1
+			stack[top] = int64(code[i]) // 将code[i]处保存的值复制到栈顶
+		case PUSH32: // 在栈顶保存32位数据
+			i += 2 // 单个字节码是16位， 所以指令指针+2
 			top++
 			stack[top] = int64((uint64(code[i-1]) << 16) | uint64(code[i]&0xffff))
-		case PUSHSTR:
+		case PUSHSTR: // 从data中复制字符串，将字符串保存在runtime的String列表中，然后在栈顶保存字符串在列表中的索引
+			// code[i+1]处保存的是字符串在data数组中的开始位置, code[i+2]保存的是结束位置
 			rt.Strings = append(rt.Strings, string(data[code[i+1]:code[i+1]+code[i+2]]))
 			top++
-			stack[top] = int64(len(rt.Strings) - 1)
-			i += 2
-		case INITVARS:
-			count := int64(code[i+1])
+			stack[top] = int64(len(rt.Strings) - 1) // 在栈顶保存字符串在rt.Strings切片中的索引
+			i += 2                                  // 指令指针+2
+		case INITVARS: // 初始化变量指令
+			count := int64(code[i+1]) // 操作数为需要初始化的变量的数量
 			//			newCount()
 			for iVar := int64(0); iVar < count; iVar++ {
 				var v int64
-				switch code[i+2+iVar] & 0xf {
+				switch code[i+2+iVar] & 0xf { // code[i+2+iVar]保存的是需要初始化的变量的类型
 				case parser.VStr:
-					rt.Strings = append(rt.Strings, ``)
+					rt.Strings = append(rt.Strings, ``) // 空字符串
 					v = int64(len(rt.Strings) - 1)
 				case parser.VArr:
-					rt.Objects = append(rt.Objects, []int64{})
+					rt.Objects = append(rt.Objects, []int64{}) // 空64位整形数组
 					v = int64(len(rt.Objects) - 1)
 				case parser.VMap:
-					rt.Objects = append(rt.Objects, map[string]int64{})
+					rt.Objects = append(rt.Objects, map[string]int64{}) // 空map
 					v = int64(len(rt.Objects) - 1)
 				case parser.VMoney:
-					rt.Objects = append(rt.Objects, decimal.New(0, 0))
+					rt.Objects = append(rt.Objects, decimal.New(0, 0)) // 空的Money类型
 					v = int64(len(rt.Objects) - 1)
 				case parser.VBytes:
-					rt.Objects = append(rt.Objects, []byte{})
+					rt.Objects = append(rt.Objects, []byte{}) // 空的字节数组类型
 					v = int64(len(rt.Objects) - 1)
 				case parser.VFile:
-					rt.Objects = append(rt.Objects, types.NewFile())
+					rt.Objects = append(rt.Objects, types.NewFile()) //空的文件类型
 					v = int64(len(rt.Objects) - 1)
 				}
+				// v是已经初始化的对象在rt.Objects中保存的索引位置，将v保存在Vars数组中
+				// 因为for循环挨个初始化在code数组中保存的变量类型，所以直接按照这个顺序将索引保存在Vars数组中
 				Vars = append(Vars, v)
 			}
 			i += count + 1

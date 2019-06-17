@@ -13,13 +13,13 @@ import (
 	"github.com/shelmesky/bvm/types"
 )
 
-type EmbedFunc struct {
-	Gas    int64
-	Func   interface{}
-	Params int64 // number of parameters from stack
-	Name   string
-	PTypes []uint32
-	Result uint32
+type EmbedFunc struct { // 内置的函数
+	Gas    int64       // 执行本函数消耗的gas数量
+	Func   interface{} // 函数对象
+	Params int64       // 来自栈上的参数的数量
+	Name   string      // 函数名称
+	PTypes []uint32    // 参数的类型列表
+	Result uint32      // 返回结果类型
 }
 
 var (

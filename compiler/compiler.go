@@ -28,6 +28,20 @@ type compiler struct {
 }
 
 func (cmpl *compiler) Append(codes ...rt.Bcode) {
+	// for debug
+	codeLen := len(codes)
+	if codeLen > 0 {
+		instr := codes[0]
+		fmt.Printf("指令: %d ")
+		if codeLen > 1 {
+			fmt.Printf("操作数 ")
+			for i := range codes {
+				fmt.Printf("%d ", code[i+1])
+			}
+		}
+		fmt.Printf("\n")
+	}
+
 	for _, code := range codes {
 		cmpl.Contract.Code = append(cmpl.Contract.Code, code)
 	}
@@ -389,63 +403,84 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 			}
 			cmpl.Contract.Code[end+1] = off
 		}
-	case parser.TFunc:
+	case parser.TFunc: //编译函数定义
 		var (
 			off rt.Bcode
 		)
-		retType := int64(parser.VVoid)
+		retType := int64(parser.VVoid) // 初始化类型为void
 		nFunc := node.Value.(*parser.NFunc)
-		if nFunc.Result != nil {
-			retType = nFunc.Result.Value.(*parser.NType).Type
+		if nFunc.Result != nil { // 如果有返回类型
+			retType = nFunc.Result.Value.(*parser.NType).Type // 获取返回类型
 			if retType == parser.VVoid {
 				return cmpl.Error(nFunc.Result, errInvalidType)
 			}
 		}
 		finfo := &rt.FuncInfo{
-			Name:   nFunc.Name,
-			Result: retType,
-			Params: make([]rt.Var, len(nFunc.Params)),
+			Name:   nFunc.Name,                        // 函数名称
+			Result: retType,                           // 返回类型
+			Params: make([]rt.Var, len(nFunc.Params)), // 参数列表
 		}
-		for ipar, v := range nFunc.Params {
+		for ipar, v := range nFunc.Params { // 依次获取每个参数的类型和名称
 			finfo.Params[ipar] = rt.Var{Type: v.Type.Value.(*parser.NType).Type, Name: v.Name}
 		}
-		if cmpl.InFunc {
+		if cmpl.InFunc { // 不允许在函数内定义函数
 			return cmpl.Error(node, errFuncLevel)
 		}
 		cmpl.RetFunc = retType
 
+		// 如果在namespace中已经存在此函数则返回错误
 		if code, _ := cmpl.findFunc(finfo); code != rt.NOP {
 			return cmpl.ErrorParam(node, errFuncExists, nFunc.Name)
 		}
-		start := len(cmpl.Contract.Code)
-		cmpl.Append(rt.JMP, 0)
-		finfo.Offset = start + 2
-		cmpl.InFunc = true
+
+		start := len(cmpl.Contract.Code) // 目前合约所有的代码
+		cmpl.Append(rt.JMP, 0)           // 在代码中插入JMP, 0指令
+		finfo.Offset = start + 2         // 函数代码在
+		cmpl.InFunc = true               // 设置"在函数中"标志为true
+
+		// 初始化函数参数: 在code数组中插入[INITVARS, 类型长度，类型列表]
+		// 为函数调用前做准备
 		if err = cmpl.InitVars(node, nFunc.Params); err != nil {
 			return err
 		}
+
+		// 如果函数有参数，则插入[GETPARAMS, 参数长度]指令
+		// 这个指令会在函数执行之前从栈中获取每个参数的值，将这些值复制给之前初始化的参数
 		if len(nFunc.Params) > 0 {
 			cmpl.Append(rt.GETPARAMS, rt.Bcode(len(nFunc.Params)))
 		}
+
+		// 生成函数体指令
 		if err = nodeToCode(nFunc.Body, cmpl); err != nil {
 			return err
 		}
-		cmpl.InFunc = false
+		cmpl.InFunc = false // 设置在函数中标志为false
+
+		// 如果函数最后的指令不是RETFUNC，且函数类型不是Void则报错
 		if cmpl.Contract.Code[len(cmpl.Contract.Code)-1] != rt.RETFUNC {
 			if cmpl.RetFunc != parser.VVoid {
 				return cmpl.Error(node, errFuncReturn)
 			}
+			// 函数最后没有return关键字，则强行插入RETFUNC指令
 			cmpl.Append(rt.RETFUNC)
 		}
+
+		// 将函数开始插入的JMP, 0变为真实的off值
+		// 值为函数代码结束的位置
+		// 因为函数执行需要靠别的代码调用，这里只是函数代码定义
 		if off, err = cmpl.JumpOff(nFunc.Body, len(cmpl.Contract.Code)-start); err != nil {
 			return err
 		}
 		cmpl.Contract.Code[start+1] = off
+
+		// 在Contract.Funcs中保存函数信息
 		cmpl.Contract.Funcs = append(cmpl.Contract.Funcs, finfo)
+		// 在namespace中保存函数签名hash
 		(*cmpl.NameSpace)[getFuncKey(finfo)] = uint32(len(cmpl.Contract.Funcs) | int(finfo.Result<<24))
-	case parser.TCallFunc:
-		nFunc := node.Value.(*parser.NCallFunc)
-		if nFunc.Params != nil {
+
+	case parser.TCallFunc: // 函数调用
+		nFunc := node.Value.(*parser.NCallFunc) // 函数名
+		if nFunc.Params != nil {                //如果调用时有参数，则编译参数
 			for _, expr := range nFunc.Params.Value.(*parser.NParams).Expr {
 				if err = nodeToCode(expr, cmpl); err != nil {
 					return err

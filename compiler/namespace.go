@@ -136,9 +136,11 @@ func getFuncKey(nfunc *rt.FuncInfo) string {
 	return ret
 }
 
+// 在namespace中查找一个函数，如果存在则返回对象的value(namesapce是一个map[string]uint32)
+// 不存在则返回rt.NOP
 func (cmpl *compiler) findFunc(nfunc *rt.FuncInfo) (rt.Bcode, uint32) {
-	key := getFuncKey(nfunc)
-	if v, ok := (*cmpl.NameSpace)[key]; ok {
+	key := getFuncKey(nfunc)                 //key是: $函数名$第一个参数类型值$第二个参数类型值...， 例如$myfunc$1$2$5
+	if v, ok := (*cmpl.NameSpace)[key]; ok { // 如果在copl.NameSpace中存在这个key，说明存在这个函数，返回
 		return rt.Bcode(v & 0xffff), v >> 24
 	}
 	return rt.NOP, 0
@@ -169,8 +171,19 @@ func (cmpl *compiler) findCallFunc(nfunc *parser.NCallFunc) (rt.Bcode, uint32) {
 	return rt.NOP, 0
 }
 
+/*
+初始化命名空间
+命令空间保存的又下列内容：
+1. 表达式操作符
+2. 内置函数
+3. 用户自定义函数
+
+命名空间的原理是在map中保存对象的信息，这种信息类似于给对象创建一个hash.
+key是对象中各元素的组合的字符串，value是另外一些元素的hash.
+
+*/
 func initNameSpace(cmpl *compiler, nameSpace *map[string]uint32) {
-	for _, oper := range operators {
+	for _, oper := range operators { // 内置操作符
 		var key string
 		for i := 2; i < len(oper); i++ {
 			key += fmt.Sprintf(`#%d`, oper[i])
@@ -178,7 +191,7 @@ func initNameSpace(cmpl *compiler, nameSpace *map[string]uint32) {
 		(*nameSpace)[key] = oper[0] | (oper[1] << 24)
 	}
 
-	for i, eFunc := range rt.StdLib {
+	for i, eFunc := range rt.StdLib { // 内置函数
 		key := fmt.Sprintf(`$%s`, eFunc.Name)
 		for _, par := range eFunc.PTypes {
 			key += fmt.Sprintf(`$%d`, par)
@@ -186,7 +199,7 @@ func initNameSpace(cmpl *compiler, nameSpace *map[string]uint32) {
 		(*nameSpace)[key] = uint32(i+EMBEDDED) | (eFunc.Result << 24)
 	}
 
-	for i, fItem := range cmpl.Custom.Funcs {
+	for i, fItem := range cmpl.Custom.Funcs { // 用户自定义函数
 		key := fmt.Sprintf(`$%s`, fItem.Name)
 		for _, par := range fItem.Params {
 			key += fmt.Sprintf(`$%d`, par)
