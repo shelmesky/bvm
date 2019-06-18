@@ -28,15 +28,16 @@ type compiler struct {
 }
 
 func (cmpl *compiler) Append(codes ...rt.Bcode) {
+	fmt.Println(codes)
 	// for debug
 	codeLen := len(codes)
 	if codeLen > 0 {
 		instr := codes[0]
-		fmt.Printf("指令: %d ")
+		fmt.Printf("指令: %d ", instr)
 		if codeLen > 1 {
 			fmt.Printf("操作数 ")
-			for i := range codes {
-				fmt.Printf("%d ", code[i+1])
+			for i := 1; i < codeLen; i++ {
+				fmt.Printf("%d ", codes[i])
 			}
 		}
 		fmt.Printf("\n")

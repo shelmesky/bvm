@@ -1,0 +1,7 @@
+contract testDefS {
+    data {
+        str s1 = `ABC`
+        str s2 = "123"
+    }
+    return s1 + s2
+}
