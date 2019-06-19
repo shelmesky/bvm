@@ -44,6 +44,54 @@ const (
 	TCase
 )
 
+var (
+	nodeTypeMap = map[int]string{
+		1:  "TContract",
+		2:  "TData",
+		3:  "TBlock",
+		4:  "TValue",
+		5:  "TVars",
+		6:  "TBinary",
+		7:  "TUnary",
+		8:  "TSetVar",
+		9:  "TIf",
+		10: "TElif",
+		11: "TReturn",
+		12: "TGetVar",
+		13: "TWhile",
+		14: "TQuestion",
+		15: "TFunc",
+		16: "TCallFunc",
+		17: "TParams",
+		18: "TCallContract",
+		19: "TContractParams",
+		20: "TType",
+		21: "TGetIndex",
+		22: "TSetIndex",
+		23: "TFor",
+		24: "TForInt",
+		25: "TBreak",
+		26: "TContinue",
+		27: "TEndLabel",
+		28: "TArray",
+		29: "TMap",
+		30: "TEnv",
+		31: "TObject",
+		32: "TObjArr",
+		33: "TObjList",
+		34: "TSwitch",
+		35: "TCase",
+	}
+)
+
+func GetNodeType(nodeType int) string {
+	if v, ok := nodeTypeMap[nodeType]; ok {
+		return v
+	}
+
+	return "[TYPE NOT FOUND]"
+}
+
 const (
 	VVoid   = iota
 	VInt    // int

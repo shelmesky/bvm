@@ -31,6 +31,10 @@ type compiler struct {
 	Jumps     []*jumps
 }
 
+func DebugPrintf(formatString string, a ...interface{}) {
+	fmt.Printf(formatString, a...)
+}
+
 func (cmpl *compiler) Append(codes ...rt.Bcode) {
 	// for debug
 	if Debug {
@@ -115,13 +119,16 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 	if node == nil {
 		return nil
 	}
+
+	fmt.Printf("compile node type: %s\n", parser.GetNodeType(node.Type))
+
 	switch node.Type {
-	case parser.TBlock:
-		varsCount := uint16(len(cmpl.Contract.Vars))
-		funcsCount := len(cmpl.Contract.Funcs)
+	case parser.TBlock: // 编译代码块
+		varsCount := uint16(len(cmpl.Contract.Vars)) // 当前合约内所有的变量(var声明和函数参数)
+		funcsCount := len(cmpl.Contract.Funcs)       // 当前合约的所有函数
 		cmpl.Blocks = append(cmpl.Blocks, node)
-		pars := node.Value.(*parser.NBlock).Params
-		if len(pars) > 0 {
+		pars := node.Value.(*parser.NBlock).Params // 当前Block代码的参数数量
+		if len(pars) > 0 {                         // 如果参数数量大于0
 			if err = cmpl.InitVars(node, pars); err != nil {
 				return err
 			}
@@ -550,7 +557,7 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 				if err = nodeToCode(ipar.Expr, cmpl); err != nil { // 编译每个调用时指定的参数
 					return err
 				}
-				if uint32(vinfo.Type) != ipar.Expr.Result {	// 如果指定的参数类型不符合contract定义的参数类型就报错
+				if uint32(vinfo.Type) != ipar.Expr.Result { // 如果指定的参数类型不符合contract定义的参数类型就报错
 					return cmpl.ErrorParam(node, errParamType, Type2Str(uint32(vinfo.Type)))
 				}
 				cmpl.Append(rt.PARCONTRACT, rt.Bcode(vinfo.Index), rt.Bcode(vinfo.Type))

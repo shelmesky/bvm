@@ -1,8 +1,13 @@
 contract testDefS {
     data {
-        str s1 = `ABC`
-        str s2 = "123"
+        str s1
     }
-    str aaaa = "bbbb"
+
+    func myfunction(int a) int {
+        return a+1
+    }
+
+    myfunction(100)
+
     return
 }

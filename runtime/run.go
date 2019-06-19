@@ -34,7 +34,11 @@ type objCount struct {
 }
 
 func DebugPrintf(formatString string, a ...interface{}) {
-	fmt.Printf(formatString, a...)
+	Debug := true
+	if Debug {
+		fmt.Printf("vm execute: ")
+		fmt.Printf(formatString, a...)
+	}
 }
 
 // Run executes a bytecode
@@ -126,27 +130,27 @@ main:
 				var v int64
 				switch code[i+2+iVar] & 0xf { // code[i+2+iVar]保存的是需要初始化的变量的类型
 				case parser.VStr:
-					fmt.Print("type: VStr    ")
+					DebugPrintf("type: VStr    ")
 					rt.Strings = append(rt.Strings, ``) // 空字符串
 					v = int64(len(rt.Strings) - 1)
 				case parser.VArr:
-					fmt.Print("type: VArr    ")
+					DebugPrintf("type: VArr    ")
 					rt.Objects = append(rt.Objects, []int64{}) // 空64位整形数组
 					v = int64(len(rt.Objects) - 1)
 				case parser.VMap:
-					fmt.Print("type: VMap    ")
+					DebugPrintf("type: VMap    ")
 					rt.Objects = append(rt.Objects, map[string]int64{}) // 空map
 					v = int64(len(rt.Objects) - 1)
 				case parser.VMoney:
-					fmt.Print("type: VMoney    ")
+					DebugPrintf("type: VMoney    ")
 					rt.Objects = append(rt.Objects, decimal.New(0, 0)) // 空的Money类型
 					v = int64(len(rt.Objects) - 1)
 				case parser.VBytes:
-					fmt.Print("type: VBytes    ")
+					DebugPrintf("type: VBytes    ")
 					rt.Objects = append(rt.Objects, []byte{}) // 空的字节数组类型
 					v = int64(len(rt.Objects) - 1)
 				case parser.VFile:
-					fmt.Print("type: VFile    ")
+					DebugPrintf("type: VFile    ")
 					rt.Objects = append(rt.Objects, types.NewFile()) //空的文件类型
 					v = int64(len(rt.Objects) - 1)
 				}
