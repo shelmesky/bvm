@@ -12,7 +12,6 @@ import (
 	"strings"
 )
 
-
 func printFunc(data runtime.IData, s string) (int64, error) {
 	fmt.Println("contract:", s)
 	return 0, nil
@@ -51,7 +50,6 @@ func (data myData) GetParam(name string) interface{} {
 	return data.Params[name]
 }
 
-
 func main() {
 	filename := os.Args[1]
 	if len(filename) == 0 {
@@ -74,10 +72,9 @@ func main() {
 				Result: simvolio.Str},
 			{Func: voidFunc, Name: `voidFunc`, Params: []uint32{simvolio.Str}},
 			{Func: objFunc, Name: `objFunc`, Params: []uint32{simvolio.Object}, Result: simvolio.Str},
-			{Func: printFunc, Name:`println`, Params:[]uint32{simvolio.Str}},
+			{Func: printFunc, Name: `println`, Params: []uint32{simvolio.Str}},
 		},
 	})
-
 
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -119,8 +116,7 @@ func main() {
 		log.Fatal("vm.Run failed:", err)
 	}
 
-	log.Printf("vm.Run: [result: %s], [gas: %d], [error: %v]\n", result, gas, err)
-
+	fmt.Printf("\nvm.Run: [result: %s], [gas: %d], [error: %v]\n", result, gas, err)
 
 	os.Exit(0)
 }

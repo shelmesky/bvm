@@ -33,6 +33,10 @@ type objCount struct {
 	Objects int
 }
 
+func DebugPrintf(formatString string, a ...interface{}) {
+	fmt.Printf(formatString, a...)
+}
+
 // Run executes a bytecode
 func (rt *Runtime) Run(code []Bcode, params []int64, gasLimit int64) (string, int64, error) {
 	var (
@@ -74,6 +78,7 @@ func (rt *Runtime) Run(code []Bcode, params []int64, gasLimit int64) (string, in
 		// 执行字节码之前，恢复保存在代码序列最前面的数据
 		// data切片中保存的是字符串
 		length := int64(uint64(code[1]))
+		DebugPrintf("DATA    length: %d\n", length)
 		data = make([]byte, length<<1)
 		length += 2
 		var off int
@@ -84,7 +89,7 @@ func (rt *Runtime) Run(code []Bcode, params []int64, gasLimit int64) (string, in
 		}
 	}
 main:
-	// i起到指针指针的作用
+	// i起到指令指针的作用
 	for i < length {
 		gas++
 		if gas > gasLimit {
@@ -96,26 +101,26 @@ main:
 			i++                         // 指令指针+1，+1处保存的是操作数
 			top++                       // 栈指针+1
 			stack[top] = int64(code[i]) // 将code[i]处保存的值复制到栈顶
-			fmt.Printf("PUSH16    %d\n", code[i])
+			DebugPrintf("PUSH16    %d\n", code[i])
 
 		case PUSH32: // 在栈顶保存32位数据
 
 			i += 2 // 单个字节码是16位， 所以指令指针+2
 			top++
 			stack[top] = int64((uint64(code[i-1]) << 16) | uint64(code[i]&0xffff))
-			fmt.Printf("PUSH32    %d    %d\n", code[i-1], code[i])
+			DebugPrintf("PUSH32    %d    %d\n", code[i-1], code[i])
 
 		case PUSHSTR: // 从data中复制字符串，将字符串保存在runtime的String列表中，然后在栈顶保存字符串在列表中的索引
 			// code[i+1]处保存的是字符串在data数组中的开始位置, code[i+2]保存的是结束位置
 			rt.Strings = append(rt.Strings, string(data[code[i+1]:code[i+1]+code[i+2]]))
-			fmt.Printf("PUSHSTR    start:%d    end: %d\n", code[i+1], code[i+1]+code[i+2])
+			DebugPrintf("PUSHSTR    start:%d    end: %d\n", code[i+1], code[i+1]+code[i+2])
 			top++
 			stack[top] = int64(len(rt.Strings) - 1) // 在栈顶保存字符串在rt.Strings切片中的索引
 			i += 2                                  // 指令指针+2
 
 		case INITVARS: // 初始化变量指令
 			count := int64(code[i+1]) // 操作数为需要初始化的变量的数量
-			fmt.Printf("INITVARS    count: %d    ", count)
+			DebugPrintf("INITVARS    count: %d    ", count)
 			//			newCount()
 			for iVar := int64(0); iVar < count; iVar++ {
 				var v int64
@@ -149,7 +154,7 @@ main:
 				// 因为for循环挨个初始化在code数组中保存的变量类型，所以直接按照这个顺序将索引保存在Vars数组中
 				Vars = append(Vars, v)
 			}
-			fmt.Printf("\n")
+			DebugPrintf("\n")
 			i += count + 1
 
 		case DELVARS:
@@ -157,22 +162,22 @@ main:
 			count := int64(code[i])
 			Vars = Vars[:count]
 			//delCount(false)
-			fmt.Printf("DELVARS    count: %d\n", count)
+			DebugPrintf("DELVARS    count: %d\n", count)
 
 		case ADDINT:
 			top--
 			stack[top] += stack[top+1]
-			fmt.Printf("ADDINT\n")
+			DebugPrintf("ADDINT\n")
 
 		case SUBINT:
 			top--
 			stack[top] -= stack[top+1]
-			fmt.Printf("SUBINT\n")
+			DebugPrintf("SUBINT\n")
 
 		case MULINT:
 			top--
 			stack[top] *= stack[top+1]
-			fmt.Printf("MULINT\n")
+			DebugPrintf("MULINT\n")
 
 		case DIVINT:
 			top--
@@ -180,7 +185,7 @@ main:
 				return ``, gas, fmt.Errorf(errDivZero)
 			}
 			stack[top] /= stack[top+1]
-			fmt.Printf("DIVINT\n")
+			DebugPrintf("DIVINT\n")
 
 		case MODINT:
 			top--
@@ -188,7 +193,7 @@ main:
 				return ``, gas, fmt.Errorf(errDivZero)
 			}
 			stack[top] %= stack[top+1]
-			fmt.Printf("MODINT\n")
+			DebugPrintf("MODINT\n")
 
 		case EQINT:
 			var b int64
@@ -197,7 +202,7 @@ main:
 				b = 1
 			}
 			stack[top] = b
-			fmt.Printf("EQINT\n")
+			DebugPrintf("EQINT\n")
 
 		case LTINT:
 			var b int64
@@ -206,7 +211,7 @@ main:
 				b = 1
 			}
 			stack[top] = b
-			fmt.Printf("LTINT\n")
+			DebugPrintf("LTINT\n")
 
 		case GTINT:
 			var b int64
@@ -215,7 +220,7 @@ main:
 				b = 1
 			}
 			stack[top] = b
-			fmt.Printf("GTINT\n")
+			DebugPrintf("GTINT\n")
 
 		case AND:
 			var b int64
@@ -224,7 +229,7 @@ main:
 				b = 1
 			}
 			stack[top] = b
-			fmt.Printf("AND\n")
+			DebugPrintf("AND\n")
 
 		case OR:
 			var b int64
@@ -233,83 +238,83 @@ main:
 				b = 1
 			}
 			stack[top] = b
-			fmt.Printf("OR\n")
+			DebugPrintf("OR\n")
 
 		case DUP:
 			top++
 			stack[top] = stack[top-1]
-			fmt.Printf("DUP\n")
+			DebugPrintf("DUP\n")
 
 		case GETVAR:
 			i++
 			top++
 			stack[top] = Vars[code[i]]
-			fmt.Printf("GETVAR    Vars_index: %d\n", code[i])
+			DebugPrintf("GETVAR    Vars_index: %d\n", code[i])
 
 		case SETVAR:
 			i++
 			top++
 			stack[top] = int64(uintptr(unsafe.Pointer(&Vars[code[i]])))
-			fmt.Printf("SETVAR    Vars_index: %d\n", code[i])
+			DebugPrintf("SETVAR    Vars_index: %d\n", code[i])
 
 		case JMP:
 			i += int64(int16(code[i+1]))
 			top = 0
-			fmt.Printf("JMP    label: %d\n", code[i+1])
+			DebugPrintf("JMP    label: %d\n", code[i+1])
 			continue
 
 		case JMPREL:
 			i += int64(int16(code[i+1]))
-			fmt.Printf("JMPREL    label: %d\n", code[i+1])
+			DebugPrintf("JMPREL    label: %d\n", code[i+1])
 			continue
 
 		case JZE:
 			top--
-			fmt.Printf("JZE    ")
+			DebugPrintf("JZE    ")
 			if stack[top+1] == 0 {
-				fmt.Printf("label: %d", code[i+1])
+				DebugPrintf("label: %d", code[i+1])
 				i += int64(int16(code[i+1]))
 				continue
 			}
 			i++
-			fmt.Printf("\n")
+			DebugPrintf("\n")
 
 		case JNZ:
 			top--
-			fmt.Printf("JNZ    ")
+			DebugPrintf("JNZ    ")
 			if stack[top+1] != 0 {
-				fmt.Printf("label: %d", code[i+1])
+				DebugPrintf("label: %d", code[i+1])
 				i += int64(int16(code[i+1]))
 				continue
 			}
 			i++
-			fmt.Printf("\n")
+			DebugPrintf("\n")
 
 		case ASSIGNINT:
 			*(*int64)(unsafe.Pointer(uintptr(stack[top-1]))) = stack[top]
 			top -= 2
-			fmt.Printf("ASSIGNINT\n")
+			DebugPrintf("ASSIGNINT\n")
 
 		case ASSIGNSTR:
 			rt.Strings = append(rt.Strings, rt.Strings[stack[top]])
 			*(*int64)(unsafe.Pointer(uintptr(stack[top-1]))) = int64(len(rt.Strings) - 1)
 			top -= 2
-			fmt.Printf("ASSIGNSTR\n")
+			DebugPrintf("ASSIGNSTR\n")
 
 		case ASSIGNADDINT:
 			*(*int64)(unsafe.Pointer(uintptr(stack[top-1]))) += stack[top]
 			top -= 2
-			fmt.Printf("ASSIGNADDINT\n")
+			DebugPrintf("ASSIGNADDINT\n")
 
 		case ASSIGNSUBINT:
 			*(*int64)(unsafe.Pointer(uintptr(stack[top-1]))) -= stack[top]
 			top -= 2
-			fmt.Printf("ASSIGNSUBINT\n")
+			DebugPrintf("ASSIGNSUBINT\n")
 
 		case ASSIGNMULINT:
 			*(*int64)(unsafe.Pointer(uintptr(stack[top-1]))) *= stack[top]
 			top -= 2
-			fmt.Printf("ASSIGNMULINT\n")
+			DebugPrintf("ASSIGNMULINT\n")
 
 		case ASSIGNDIVINT:
 			if stack[top] == 0 {
@@ -317,7 +322,7 @@ main:
 			}
 			*(*int64)(unsafe.Pointer(uintptr(stack[top-1]))) /= stack[top]
 			top -= 2
-			fmt.Printf("ASSIGNDIVINT\n")
+			DebugPrintf("ASSIGNDIVINT\n")
 
 		case ASSIGNMODINT:
 			if stack[top] == 0 {
@@ -325,14 +330,14 @@ main:
 			}
 			*(*int64)(unsafe.Pointer(uintptr(stack[top-1]))) %= stack[top]
 			top -= 2
-			fmt.Printf("ASSIGNMODINT\n")
+			DebugPrintf("ASSIGNMODINT\n")
 
 		case CALLFUNC: // 函数调用
 			calls[coff] = i + 2
 			calls[coff+1] = int64(len(Vars))
 			coff += 2
 			i += int64(int16(code[i+1]))
-			fmt.Printf("CALLFUNC    IP:%d\n", i)
+			DebugPrintf("CALLFUNC    IP:%d\n", i)
 			continue
 
 		case CUSTOMFUNC: // 调用用户自定义函数
@@ -389,7 +394,7 @@ main:
 				return ``, gas, fmt.Errorf(errRetType, eFunc.Name)
 			}
 
-			fmt.Printf("CUSTOMFUNC    name: %s    args_count:%d\n", eFunc.Name, len(eFunc.Params))
+			DebugPrintf("CUSTOMFUNC    name: %s    args_count:%d\n", eFunc.Name, len(eFunc.Params))
 
 		case EMBEDFUNC: // 内置函数调用
 			i++
@@ -415,8 +420,9 @@ main:
 				top++
 				stack[top] = result[0].Interface().(int64)
 			}
+			DebugPrintf("EMBEDFUNC    name: %s    args_count:%d\n", eFunc.Name, eFunc.Params+1)
 
-		case CALLCONTRACT:
+		case CALLCONTRACT: // 调用其他contract
 			i++
 			top++
 			result, cgas, cerr := rt.Run((*rt.Contracts)[code[i]].Code, pars, gasLimit-gas)
@@ -433,12 +439,15 @@ main:
 			rt.Strings = append(rt.Strings, result)
 			stack[top] = int64(len(rt.Strings) - 1)
 
-		case LOADPARS:
+			DebugPrintf("CALLCONTRACT    idx: %d    pars_count: %d\n", code[i], len(pars))
+
+		case LOADPARS: // 从本函数的参数params中载入参数
 			for j := 0; j < (len(params) >> 1); j++ {
 				Vars[params[j<<1]] = params[(j<<1)+1]
 			}
+			DebugPrintf("LOADPARS    pars_count: %d\n", len(params))
 
-		case PARCONTRACT:
+		case PARCONTRACT: // 载入合约参数
 			if !isParContract {
 				newCount()
 				isParContract = true
@@ -451,6 +460,7 @@ main:
 			}
 			pars = append(pars, int64(code[i-1]), stack[top])
 			top--
+			DebugPrintf("PARCONTRACT\n")
 
 		case GETPARAMS:
 			i++
@@ -458,12 +468,15 @@ main:
 				Vars[len(Vars)-k] = stack[top]
 				top--
 			}
+			DebugPrintf("GETPARAMS    idx: %d\n", code[i])
 
 		case RETURN:
+			DebugPrintf("RETURN\n")
 			result = print(rt, stack[top], int64(code[i+1]))
 			break main
 
 		case RETFUNC:
+			DebugPrintf("RETFUNC\n")
 			Vars = Vars[:calls[coff-1]]
 			coff -= 2
 			i = calls[coff]
@@ -471,6 +484,7 @@ main:
 
 		case SIGNINT:
 			stack[top] = -stack[top]
+			DebugPrintf("SIGNINT\n")
 
 		case NOT:
 			if stack[top] == 0 {
@@ -478,11 +492,13 @@ main:
 			} else {
 				stack[top] = 0
 			}
+			DebugPrintf("NOT\n")
 
 		case ADDSTR:
 			top--
 			rt.Strings = append(rt.Strings, rt.Strings[stack[top]]+rt.Strings[stack[top+1]])
 			stack[top] = int64(len(rt.Strings) - 1)
+			DebugPrintf("ADDSTR\n")
 
 		case EQSTR:
 			top--
@@ -491,16 +507,19 @@ main:
 			} else {
 				stack[top] = 0
 			}
+			DebugPrintf("EQSTR\n")
 
 		case ASSIGNADDSTR:
 			ind := *(*int64)(unsafe.Pointer(uintptr(stack[top-1])))
 			rt.Strings[ind] += rt.Strings[stack[top]]
 			top -= 2
+			DebugPrintf("ASSIGNADDSTR\n")
 
 		case APPENDARR:
 			ind := *(*int64)(unsafe.Pointer(uintptr(stack[top-1])))
 			rt.Objects[ind] = append(rt.Objects[ind].([]int64), stack[top])
 			top -= 2
+			DebugPrintf("APPENDARR\n")
 
 		case GETINDEX:
 			switch v := rt.Objects[stack[top-1]].(type) {
@@ -516,6 +535,7 @@ main:
 				stack[top-1] = int64(v[stack[top]])
 			}
 			top--
+			DebugPrintf("GETINDEX\n")
 
 		case SETINDEX:
 			switch v := rt.Objects[stack[top-1]].(type) {
@@ -528,6 +548,7 @@ main:
 					return ``, gas, fmt.Errorf(errIndexOut, stack[top], len(v))
 				}
 			}
+			DebugPrintf("SETINDEX\n")
 
 		case GETMAP:
 			imap := rt.Objects[stack[top-1]].(map[string]int64)
@@ -540,28 +561,34 @@ main:
 				return ``, gas, fmt.Errorf(errIndexMap, rt.Strings[stack[top]])
 			}
 			top--
+			DebugPrintf("GETMAP\n")
 
 		case SETMAP:
 			if stack[top] >= int64(len(rt.Strings)) || stack[top] < 0 {
 				return ``, gas, fmt.Errorf(errIndexOut, stack[top], len(rt.Strings))
 			}
+			DebugPrintf("SETMAP\n")
 
 		case COPYSTR:
 			stack[top] = copy(rt, int64(parser.VStr), stack[top])
+			DebugPrintf("COPYSTR\n")
 
 		case COPY:
 			i++
 			stack[top] = copy(rt, int64(code[i]), stack[top])
+			DebugPrintf("COPY\n")
 
 		case ASSIGNSETMAP:
 			imap := rt.Objects[stack[top-2]].(map[string]int64)
 			imap[rt.Strings[stack[top-1]]] = stack[top]
 			top -= 3
+			DebugPrintf("ASSIGNSETMAP\n")
 
 		case ASSIGNSETARR:
 			iarr := rt.Objects[stack[top-2]].([]int64)
 			iarr[stack[top-1]] = stack[top]
 			top -= 3
+			DebugPrintf("ASSIGNSETARR\n")
 
 		case ASSIGNSETBYTES:
 			ibyte := rt.Objects[stack[top-2]].([]uint8)
@@ -570,6 +597,7 @@ main:
 			}
 			ibyte[stack[top-1]] = uint8(stack[top])
 			top -= 3
+			DebugPrintf("ASSIGNSETBYTES\n")
 
 		case INITARR:
 			i++
@@ -581,6 +609,7 @@ main:
 			rt.Objects = append(rt.Objects, iarr)
 			top -= count - 1
 			stack[top] = int64(len(rt.Objects) - 1)
+			DebugPrintf("INITARR    count: %d\n", count)
 
 		case INITMAP:
 			i++
@@ -594,6 +623,7 @@ main:
 			rt.Objects = append(rt.Objects, imap)
 			top -= 2*count - 1
 			stack[top] = int64(len(rt.Objects) - 1)
+			DebugPrintf("INITMAP    count: %d\n", count)
 
 		case INITOBJ:
 			i++
@@ -614,6 +644,7 @@ main:
 			rt.Objects = append(rt.Objects, imap)
 			top -= 3*count - 1
 			stack[top] = int64(len(rt.Objects) - 1)
+			DebugPrintf("INITOBJ    count: %d\n", count)
 
 		case INITOBJLIST:
 			i++
@@ -633,6 +664,7 @@ main:
 			rt.Objects = append(rt.Objects, ilist)
 			top -= 2*count - 1
 			stack[top] = int64(len(rt.Objects) - 1)
+			DebugPrintf("INITOBJLIST    count: %d\n", count)
 
 		case OBJ2LIST:
 			obj := rt.Objects[stack[top]].(*types.Map)
@@ -645,6 +677,7 @@ main:
 			}
 			rt.Objects = append(rt.Objects, ilist)
 			stack[top] = int64(len(rt.Objects) - 1)
+			DebugPrintf("OBJ2LIST\n")
 
 		case ENV:
 			i++
@@ -654,34 +687,40 @@ main:
 			}
 			top++
 			stack[top] = envVal.Value
+			DebugPrintf("ENV    index: %d\n", code[i])
 
 		case PUSH64:
 			i += 4
 			top++
 			stack[top] = int64((uint64(code[i-3]) << 48) | (uint64(code[i-2]) << 32) |
 				(uint64(code[i-1]) << 16) | (uint64(code[i]) & 0xffff))
+			DebugPrintf("PUSH64\n")
 
 		case SIGNFLOAT:
 			f := -*(*float64)(unsafe.Pointer(&stack[top]))
 			stack[top] = *(*int64)(unsafe.Pointer(&f))
+			DebugPrintf("SIGNFLOAT\n")
 
 		case ADDFLOAT:
 			top--
 			f := *(*float64)(unsafe.Pointer(&stack[top]))
 			f += *(*float64)(unsafe.Pointer(&stack[top+1]))
 			stack[top] = *(*int64)(unsafe.Pointer(&f))
+			DebugPrintf("ADDFLOAT\n")
 
 		case SUBFLOAT:
 			top--
 			f := *(*float64)(unsafe.Pointer(&stack[top]))
 			f -= *(*float64)(unsafe.Pointer(&stack[top+1]))
 			stack[top] = *(*int64)(unsafe.Pointer(&f))
+			DebugPrintf("SUBFLOAT\n")
 
 		case MULFLOAT:
 			top--
 			f := *(*float64)(unsafe.Pointer(&stack[top]))
 			f *= *(*float64)(unsafe.Pointer(&stack[top+1]))
 			stack[top] = *(*int64)(unsafe.Pointer(&f))
+			DebugPrintf("MULFLOAT\n")
 
 		case DIVFLOAT:
 			top--
@@ -691,24 +730,28 @@ main:
 			f := *(*float64)(unsafe.Pointer(&stack[top]))
 			f /= *(*float64)(unsafe.Pointer(&stack[top+1]))
 			stack[top] = *(*int64)(unsafe.Pointer(&f))
+			DebugPrintf("DIVLOAT\n")
 
 		case ASSIGNADDFLOAT:
 			f := *(*float64)(unsafe.Pointer(uintptr(stack[top-1])))
 			f += *(*float64)(unsafe.Pointer(&stack[top]))
 			*(*int64)(unsafe.Pointer(uintptr(stack[top-1]))) = *(*int64)(unsafe.Pointer(&f))
 			top -= 2
+			DebugPrintf("ASSIGNADDFLOAT\n")
 
 		case ASSIGNSUBFLOAT:
 			f := *(*float64)(unsafe.Pointer(uintptr(stack[top-1])))
 			f -= *(*float64)(unsafe.Pointer(&stack[top]))
 			*(*int64)(unsafe.Pointer(uintptr(stack[top-1]))) = *(*int64)(unsafe.Pointer(&f))
 			top -= 2
+			DebugPrintf("ASSIGNSUBFLOAT\n")
 
 		case ASSIGNMULFLOAT:
 			f := *(*float64)(unsafe.Pointer(uintptr(stack[top-1])))
 			f *= *(*float64)(unsafe.Pointer(&stack[top]))
 			*(*int64)(unsafe.Pointer(uintptr(stack[top-1]))) = *(*int64)(unsafe.Pointer(&f))
 			top -= 2
+			DebugPrintf("ASSIGNMULFLOAT\n")
 
 		case ASSIGNDIVFLOAT:
 			f := *(*float64)(unsafe.Pointer(uintptr(stack[top-1])))
@@ -719,6 +762,7 @@ main:
 			f /= d
 			*(*int64)(unsafe.Pointer(uintptr(stack[top-1]))) = *(*int64)(unsafe.Pointer(&f))
 			top -= 2
+			DebugPrintf("ASSIGNDIVFLOAT\n")
 
 		case EQFLOAT:
 			var b int64
@@ -728,6 +772,7 @@ main:
 				b = 1
 			}
 			stack[top] = b
+			DebugPrintf("EQFLOAT\n")
 
 		case LTFLOAT:
 			var b int64
@@ -737,6 +782,7 @@ main:
 				b = 1
 			}
 			stack[top] = b
+			DebugPrintf("LTFLOAT\n")
 
 		case GTFLOAT:
 			var b int64
@@ -746,28 +792,33 @@ main:
 				b = 1
 			}
 			stack[top] = b
+			DebugPrintf("GTFLOAT\n")
 
 		case ADDMONEY:
 			top--
 			d := rt.Objects[stack[top]].(decimal.Decimal)
 			rt.Objects = append(rt.Objects, d.Add(rt.Objects[stack[top+1]].(decimal.Decimal)))
 			stack[top] = int64(len(rt.Objects) - 1)
+			DebugPrintf("ADDMONEY\n")
 
 		case SUBMONEY:
 			top--
 			d := rt.Objects[stack[top]].(decimal.Decimal)
 			rt.Objects = append(rt.Objects, d.Sub(rt.Objects[stack[top+1]].(decimal.Decimal)))
 			stack[top] = int64(len(rt.Objects) - 1)
+			DebugPrintf("SUBMONEY\n")
 
 		case SIGNMONEY:
 			rt.Objects = append(rt.Objects, rt.Objects[stack[top]].(decimal.Decimal).Neg())
 			stack[top] = int64(len(rt.Objects) - 1)
+			DebugPrintf("SIGNMONEY\n")
 
 		case MULMONEY:
 			top--
 			d := rt.Objects[stack[top]].(decimal.Decimal)
 			rt.Objects = append(rt.Objects, d.Mul(rt.Objects[stack[top+1]].(decimal.Decimal)))
 			stack[top] = int64(len(rt.Objects) - 1)
+			DebugPrintf("MULMONEY\n")
 
 		case DIVMONEY:
 			top--
@@ -777,6 +828,7 @@ main:
 			}
 			rt.Objects = append(rt.Objects, rt.Objects[stack[top]].(decimal.Decimal).Div(d))
 			stack[top] = int64(len(rt.Objects) - 1)
+			DebugPrintf("DIVMONEY\n")
 
 		case ASSIGNADDMONEY:
 			d := rt.Objects[stack[top]].(decimal.Decimal)
@@ -784,6 +836,7 @@ main:
 			rt.Objects = append(rt.Objects, rt.Objects[ind].(decimal.Decimal).Add(d))
 			*(*int64)(unsafe.Pointer(uintptr(stack[top-1]))) = int64(len(rt.Objects) - 1)
 			top -= 2
+			DebugPrintf("ASSIGNADDMONEY\n")
 
 		case ASSIGNSUBMONEY:
 			d := rt.Objects[stack[top]].(decimal.Decimal)
@@ -791,6 +844,7 @@ main:
 			rt.Objects = append(rt.Objects, rt.Objects[ind].(decimal.Decimal).Sub(d))
 			*(*int64)(unsafe.Pointer(uintptr(stack[top-1]))) = int64(len(rt.Objects) - 1)
 			top -= 2
+			DebugPrintf("ASSIGNSUBMONEY\n")
 
 		case ASSIGNMULMONEY:
 			d := rt.Objects[stack[top]].(decimal.Decimal)
@@ -798,6 +852,7 @@ main:
 			rt.Objects = append(rt.Objects, rt.Objects[ind].(decimal.Decimal).Mul(d))
 			*(*int64)(unsafe.Pointer(uintptr(stack[top-1]))) = int64(len(rt.Objects) - 1)
 			top -= 2
+			DebugPrintf("ASSIGNMULMONEY\n")
 
 		case ASSIGNDIVMONEY:
 			d := rt.Objects[stack[top]].(decimal.Decimal)
@@ -808,6 +863,7 @@ main:
 			rt.Objects = append(rt.Objects, rt.Objects[ind].(decimal.Decimal).Div(d))
 			*(*int64)(unsafe.Pointer(uintptr(stack[top-1]))) = int64(len(rt.Objects) - 1)
 			top -= 2
+			DebugPrintf("ASSIGNDIVMONEY\n")
 
 		case EQMONEY:
 			var b int64
@@ -817,6 +873,7 @@ main:
 				b = 1
 			}
 			stack[top] = b
+			DebugPrintf("EQMONEY\n")
 
 		case LTMONEY:
 			var b int64
@@ -826,6 +883,7 @@ main:
 				b = 1
 			}
 			stack[top] = b
+			DebugPrintf("LTMONEY\n")
 
 		case GTMONEY:
 			var b int64
@@ -835,12 +893,14 @@ main:
 				b = 1
 			}
 			stack[top] = b
+			DebugPrintf("GTMONEY\n")
 
 		case ASSIGNADDBYTES:
 			ind := *(*int64)(unsafe.Pointer(uintptr(stack[top-1])))
 			rt.Objects[ind] = append(rt.Objects[ind].([]byte),
 				rt.Objects[stack[top]].([]byte)...)
 			top -= 2
+			DebugPrintf("ASSIGNADDBYTES\n")
 
 		default:
 			return ``, gas, fmt.Errorf(errCommand, code[i])

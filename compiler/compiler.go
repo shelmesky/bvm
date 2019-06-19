@@ -10,6 +10,10 @@ import (
 	rt "github.com/shelmesky/bvm/runtime"
 )
 
+const (
+	Debug = false
+)
+
 type jumps struct {
 	Breaks    []int
 	Continues []int
@@ -28,19 +32,21 @@ type compiler struct {
 }
 
 func (cmpl *compiler) Append(codes ...rt.Bcode) {
-	fmt.Println(codes)
 	// for debug
-	codeLen := len(codes)
-	if codeLen > 0 {
-		instr := codes[0]
-		fmt.Printf("指令: %d ", instr)
-		if codeLen > 1 {
-			fmt.Printf("操作数 ")
-			for i := 1; i < codeLen; i++ {
-				fmt.Printf("%d ", codes[i])
+	if Debug {
+		fmt.Println(codes)
+		codeLen := len(codes)
+		if codeLen > 0 {
+			instr := codes[0]
+			fmt.Printf("指令: %d ", instr)
+			if codeLen > 1 {
+				fmt.Printf("操作数 ")
+				for i := 1; i < codeLen; i++ {
+					fmt.Printf("%d ", codes[i])
+				}
 			}
+			fmt.Printf("\n")
 		}
-		fmt.Printf("\n")
 	}
 
 	for _, code := range codes {
@@ -519,32 +525,32 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 			}
 			cmpl.Append(rt.CALLFUNC, off)
 		}
-	case parser.TCallContract:
+	case parser.TCallContract: // 调用其他合约
 		nCallContract := node.Value.(*parser.NCallContract)
-		ind, ok := (*cmpl.NameSpace)[nCallContract.Name]
+		ind, ok := (*cmpl.NameSpace)[nCallContract.Name] // 在命名空间中根据合同名称寻找索引
 		if !ok {
 			return cmpl.ErrorParam(node, errContractNotExists, nCallContract.Name)
 		}
-		cnt := (*cmpl.Contracts)[ind]
+		cnt := (*cmpl.Contracts)[ind] // 找到真正contract
 		if cmpl.Contract.Read && !cnt.Read {
 			return cmpl.Error(node, errReadContract)
 		}
-		if len(nCallContract.Params) > 0 {
-			if cnt.Params == nil {
+		if len(nCallContract.Params) > 0 { // 如果调用contract时指定了参数
+			if cnt.Params == nil { // 但如果真正的contract没有参数， 返回错误
 				return cmpl.ErrorParam(node, errContractNoParams, nCallContract.Name)
 			}
-			for _, ipar := range nCallContract.Params {
+			for _, ipar := range nCallContract.Params { // 循环处理每个调用时指定的参数
 				var (
 					vinfo rt.VarInfo
 					vok   bool
 				)
-				if vinfo, vok = cnt.Params[ipar.Name]; !vok {
+				if vinfo, vok = cnt.Params[ipar.Name]; !vok { // 如果指定的参数
 					return cmpl.ErrorParam(node, errContractNoParam, ipar.Name)
 				}
-				if err = nodeToCode(ipar.Expr, cmpl); err != nil {
+				if err = nodeToCode(ipar.Expr, cmpl); err != nil { // 编译每个调用时指定的参数
 					return err
 				}
-				if uint32(vinfo.Type) != ipar.Expr.Result {
+				if uint32(vinfo.Type) != ipar.Expr.Result {	// 如果指定的参数类型不符合contract定义的参数类型就报错
 					return cmpl.ErrorParam(node, errParamType, Type2Str(uint32(vinfo.Type)))
 				}
 				cmpl.Append(rt.PARCONTRACT, rt.Bcode(vinfo.Index), rt.Bcode(vinfo.Type))

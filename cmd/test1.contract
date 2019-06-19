@@ -3,5 +3,6 @@ contract testDefS {
         str s1 = `ABC`
         str s2 = "123"
     }
-    return s1 + s2
+    str aaaa = "bbbb"
+    return
 }
