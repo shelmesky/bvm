@@ -95,6 +95,7 @@ func main() {
 		log.Fatal("LoadContract failed:", err)
 	}
 
+	// 指定给合约的参数， key是参数名称
 	data := myData{
 		Env: []interface{}{7, 1, `0122afcd34`},
 		Params: map[string]interface{}{
@@ -106,6 +107,8 @@ func main() {
 			`pBytes`: `31325f`,
 			`bBytes`: []byte{33, 39, 0x5b, 0},
 			`fFile`:  types.FileInit(`myfile.txt`, `text`, []byte{45, 47, 00, 32}),
+
+			`s1`: `s1s1s1s1s1s1s1`,
 		},
 	}
 

@@ -124,22 +124,29 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 
 	switch node.Type {
 	case parser.TBlock: // 编译代码块
+		/*
+			合约contract{}和函数定义func xxx() {}都会匹配到TBlock类型，
+			如果类型是合约， 则其中的data{}会被当作Block的参数.
+			如果类型是函数， 进入到这里表明已经在处理函数体， 而函数的参数和返回值在TFunc类型中已经被处理。
+		*/
 		varsCount := uint16(len(cmpl.Contract.Vars)) // 当前合约内所有的变量(var声明和函数参数)
 		funcsCount := len(cmpl.Contract.Funcs)       // 当前合约的所有函数
 		cmpl.Blocks = append(cmpl.Blocks, node)
 		pars := node.Value.(*parser.NBlock).Params // 当前Block代码的参数数量
-		if len(pars) > 0 {                         // 如果参数数量大于0
-			if err = cmpl.InitVars(node, pars); err != nil {
+		// 如果参数数量大于0 (进入到次分支， 说明正在编译contract的data结构。函数的Block不会进入此分支.
+		// 因为函数的参数已经在TFunc类型中处理。
+		if len(pars) > 0 {
+			if err = cmpl.InitVars(node, pars); err != nil { // 初始化变量， 生成INITVARS指令.
 				return err
 			}
-			cmpl.Contract.Params = make(map[string]rt.VarInfo)
-			for k, ipar := range pars {
+			cmpl.Contract.Params = make(map[string]rt.VarInfo) // 初始化contract的参数
+			for k, ipar := range pars {                        // 将每个参数保存在编译结果的Contract.Params这个map中
 				cmpl.Contract.Params[ipar.Name] = rt.VarInfo{Index: uint16(k),
 					Type: uint16(ipar.Type.Value.(*parser.NType).Type)}
 			}
-			cmpl.Append(rt.LOADPARS)
+			cmpl.Append(rt.LOADPARS) // 生成LOADPARS指令
 		}
-		for _, child := range node.Value.(*parser.NBlock).Statements {
+		for _, child := range node.Value.(*parser.NBlock).Statements { // 编译block中的语句
 			if err = nodeToCode(child, cmpl); err != nil {
 				return err
 			}
