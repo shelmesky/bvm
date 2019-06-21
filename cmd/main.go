@@ -14,6 +14,27 @@ import (
 	"strings"
 )
 
+var (
+	vmConfig = simvolio.VMSettings{
+		GasLimit: 200000000,
+		Env: []simvolio.EnvItem{
+			{Name: `block`, Type: simvolio.Int},
+			{Name: `ecosystem`, Type: simvolio.Int},
+			{Name: `key`, Type: simvolio.Str},
+		},
+		Funcs: []simvolio.FuncItem{
+			{Func: readFunc, Name: `readFunc`, Read: true,
+				Params: []uint32{simvolio.Str, simvolio.Int}, Result: simvolio.Str},
+			{Func: testFunc, Name: `testFunc`, Params: []uint32{simvolio.Str, simvolio.Int}, Result: simvolio.Str},
+			{Func: fbmFunc, Name: `fbmFunc`, Params: []uint32{simvolio.Float, simvolio.Bool, simvolio.Money},
+				Result: simvolio.Str},
+			{Func: voidFunc, Name: `voidFunc`, Params: []uint32{simvolio.Str}},
+			{Func: objFunc, Name: `objFunc`, Params: []uint32{simvolio.Object}, Result: simvolio.Str},
+			{Func: printFunc, Name: `println`, Params: []uint32{simvolio.Str}},
+		},
+	}
+)
+
 func printFunc(data runtime.IData, s string) (int64, error) {
 	fmt.Println("contract:", s)
 	return 0, nil
@@ -87,24 +108,7 @@ func Compile(inputFilename, outputFilename string) {
 		os.Exit(1)
 	}
 
-	vm := simvolio.NewVM(simvolio.VMSettings{
-		GasLimit: 200000000,
-		Env: []simvolio.EnvItem{
-			{Name: `block`, Type: simvolio.Int},
-			{Name: `ecosystem`, Type: simvolio.Int},
-			{Name: `key`, Type: simvolio.Str},
-		},
-		Funcs: []simvolio.FuncItem{
-			{Func: readFunc, Name: `readFunc`, Read: true,
-				Params: []uint32{simvolio.Str, simvolio.Int}, Result: simvolio.Str},
-			{Func: testFunc, Name: `testFunc`, Params: []uint32{simvolio.Str, simvolio.Int}, Result: simvolio.Str},
-			{Func: fbmFunc, Name: `fbmFunc`, Params: []uint32{simvolio.Float, simvolio.Bool, simvolio.Money},
-				Result: simvolio.Str},
-			{Func: voidFunc, Name: `voidFunc`, Params: []uint32{simvolio.Str}},
-			{Func: objFunc, Name: `objFunc`, Params: []uint32{simvolio.Object}, Result: simvolio.Str},
-			{Func: printFunc, Name: `println`, Params: []uint32{simvolio.Str}},
-		},
-	})
+	vm := simvolio.NewVM(vmConfig)
 
 	content, err := ioutil.ReadFile(inputFilename)
 	if err != nil {
@@ -188,24 +192,7 @@ func Compile(inputFilename, outputFilename string) {
 }
 
 func Run(bytecodeFilename string) {
-	vm := simvolio.NewVM(simvolio.VMSettings{
-		GasLimit: 200000000,
-		Env: []simvolio.EnvItem{
-			{Name: `block`, Type: simvolio.Int},
-			{Name: `ecosystem`, Type: simvolio.Int},
-			{Name: `key`, Type: simvolio.Str},
-		},
-		Funcs: []simvolio.FuncItem{
-			{Func: readFunc, Name: `readFunc`, Read: true,
-				Params: []uint32{simvolio.Str, simvolio.Int}, Result: simvolio.Str},
-			{Func: testFunc, Name: `testFunc`, Params: []uint32{simvolio.Str, simvolio.Int}, Result: simvolio.Str},
-			{Func: fbmFunc, Name: `fbmFunc`, Params: []uint32{simvolio.Float, simvolio.Bool, simvolio.Money},
-				Result: simvolio.Str},
-			{Func: voidFunc, Name: `voidFunc`, Params: []uint32{simvolio.Str}},
-			{Func: objFunc, Name: `objFunc`, Params: []uint32{simvolio.Object}, Result: simvolio.Str},
-			{Func: printFunc, Name: `println`, Params: []uint32{simvolio.Str}},
-		},
-	})
+	vm := simvolio.NewVM(vmConfig)
 
 	bytecodeBody, err := ioutil.ReadFile(bytecodeFilename)
 	if err != nil {
