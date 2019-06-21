@@ -113,12 +113,13 @@ func (vm *VM) GetContract(name string) *runtime.Contract {
 }
 
 // Link links the compiled contract to VM
+// 将编译的好的contract链接到VM
 func (vm *VM) Link(cnt *runtime.Contract, reload bool) error {
 	var (
 		ind uint32
 		ok  bool
 	)
-	if ind, ok = vm.NameSpace[cnt.Name]; ok && !reload {
+	if ind, ok = vm.NameSpace[cnt.Name]; ok && !reload { // 如果已经存在则报错
 		return fmt.Errorf(errCntExists, cnt.Name)
 	} else if !ok && reload {
 		return fmt.Errorf(errCntNotExists, cnt.Name)
@@ -126,10 +127,10 @@ func (vm *VM) Link(cnt *runtime.Contract, reload bool) error {
 	if reload {
 		vm.Contracts[ind] = cnt
 	} else {
-		vm.Contracts = append(vm.Contracts, cnt)
-		ind = uint32(len(vm.Contracts) - 1)
+		vm.Contracts = append(vm.Contracts, cnt) // 在vm.Contracts合约数组中保存合约
+		ind = uint32(len(vm.Contracts) - 1)      // 保存后的索引位置
 	}
-	vm.NameSpace[cnt.Name] = ind
+	vm.NameSpace[cnt.Name] = ind // 在vm.NameSpace中保存合约的名字和索引位置
 	return nil
 }
 

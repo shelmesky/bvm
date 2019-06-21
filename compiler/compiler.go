@@ -156,6 +156,8 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 			cmpl.Contract.Code[len(cmpl.Contract.Code)-1] != rt.RETFUNC {
 			cmpl.Append(rt.DELVARS, rt.Bcode(varsCount))
 		}
+		// 编译一个contract后删除在编译过程中的变量和函数，
+		// 因为cmpl.Contract和cmpl.NameSpace在编译下个合约时会重复使用 ???
 		// Remove vars
 		for key, vinfo := range cmpl.Contract.Vars {
 			if vinfo.Index >= varsCount {
@@ -169,6 +171,7 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 			}
 			cmpl.Contract.Funcs = cmpl.Contract.Funcs[:funcsCount]
 		}
+
 	case parser.TContract:
 		cmpl.Contract.Name = node.Value.(*parser.NContract).Name
 		cmpl.Contract.Read = node.Value.(*parser.NContract).Read
@@ -541,7 +544,10 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 		}
 	case parser.TCallContract: // 调用其他合约
 		nCallContract := node.Value.(*parser.NCallContract)
-		ind, ok := (*cmpl.NameSpace)[nCallContract.Name] // 在命名空间中根据合同名称寻找索引
+		// 在命名空间中根据合同名称寻找索引, 每编译好一个合约就在vm.Contracts中append，
+		// 拿到索引值后添加到vm.NameSpace中。(代码在vm.Link函数中)
+		// cmpl.NameSpace和cmpl.Contracts其实就是vm.NameSpace和vm.Contracts
+		ind, ok := (*cmpl.NameSpace)[nCallContract.Name]
 		if !ok {
 			return cmpl.ErrorParam(node, errContractNotExists, nCallContract.Name)
 		}
@@ -824,6 +830,10 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 }
 
 // Compile compiles contract
+/*
+编译合约生成字节码.
+参数nameSpace和contracts是vm对象的参数： &vm.NameSpace, &vm.Contracts
+*/
 func Compile(input string, nameSpace *map[string]uint32, contracts *[]*rt.Contract,
 	custom *rt.Custom) (*rt.Contract, error) {
 	var root *parser.Node

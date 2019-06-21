@@ -1,9 +1,10 @@
 package main
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	simvolio "github.com/shelmesky/bvm"
+	"github.com/shelmesky/bvm"
 	"github.com/shelmesky/bvm/runtime"
 	"github.com/shelmesky/bvm/types"
 	"github.com/shopspring/decimal"
@@ -51,9 +52,37 @@ func (data myData) GetParam(name string) interface{} {
 	return data.Params[name]
 }
 
+func printUsage() {
+	fmt.Printf("usage: %s [compile | run] filename\n", os.Args[0])
+	os.Exit(1)
+}
+
 func main() {
-	filename := os.Args[1]
-	if len(filename) == 0 {
+	if len(os.Args) == 1 {
+		printUsage()
+	}
+
+	arg1 := os.Args[1]
+
+	if arg1 == "compile" {
+		inputFilename := os.Args[2]
+		filenameSplit := strings.Split(inputFilename, ".")
+		outputFilename := filenameSplit[0] + ".bvm"
+		Compile(inputFilename, outputFilename)
+		os.Exit(0)
+	}
+
+	if arg1 == "run" {
+		bytecodeFilename := os.Args[2]
+		Run(bytecodeFilename)
+		os.Exit(0)
+	}
+
+	printUsage()
+}
+
+func Compile(inputFilename, outputFilename string) {
+	if len(inputFilename) == 0 {
 		fmt.Println("need filename")
 		os.Exit(1)
 	}
@@ -77,7 +106,7 @@ func main() {
 		},
 	})
 
-	content, err := ioutil.ReadFile(filename)
+	content, err := ioutil.ReadFile(inputFilename)
 	if err != nil {
 		log.Fatal("ReadFile failed:", err)
 	}
@@ -95,6 +124,121 @@ func main() {
 	if err != nil {
 		log.Fatal("LoadContract failed:", err)
 	}
+
+	// 序列化合约代码
+	contractBuffer, err := json.Marshal(vm.Contracts[0])
+	if err != nil {
+		fmt.Println("encode contract failed:", err)
+	}
+
+	// 序列化命名空间
+	// TODO: 不在输出文件中保存namespace?
+	/* 只能保存一份固定的? */
+	namespaceBuffer, err := json.Marshal(vm.NameSpace)
+	if err != nil {
+		fmt.Println("encode namespace failed:")
+	}
+
+	// 打开编译输出文件
+	outputFile, err := os.OpenFile(outputFilename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0664)
+	if err != nil {
+		fmt.Println("open file for write failed:", err)
+		os.Exit(1)
+	}
+
+	// 写入合约代码长度
+	contractBufferLen := len(contractBuffer)
+	lenBuffer := make([]byte, 4)
+	binary.LittleEndian.PutUint32(lenBuffer, uint32(contractBufferLen))
+	n, err := outputFile.Write(lenBuffer)
+	if n != 4 || err != nil {
+		fmt.Println("write contract code length failed:", err, n)
+		os.Exit(1)
+	}
+
+	// 写入合约代码
+	n, err = outputFile.Write(contractBuffer)
+	if n != contractBufferLen || err != nil {
+		fmt.Println("write contract code failed:", err, n)
+		os.Exit(1)
+	}
+
+	// 写入命名空间长度
+	namespaceBufferLen := len(namespaceBuffer)
+	lenBuffer = make([]byte, 4)
+	binary.LittleEndian.PutUint32(lenBuffer, uint32(namespaceBufferLen))
+	n, err = outputFile.Write(lenBuffer)
+	if n != 4 || err != nil {
+		fmt.Println("write namespace length failed:", err, n)
+		os.Exit(1)
+	}
+
+	// 写入命名空间
+	n, err = outputFile.Write(namespaceBuffer)
+	if n != namespaceBufferLen || err != nil {
+		fmt.Println("write namespace code failed:", err, n)
+		os.Exit(1)
+	}
+
+	err = outputFile.Close()
+	if err != nil {
+		fmt.Println("close output file failed:", err)
+		os.Exit(1)
+	}
+}
+
+func Run(bytecodeFilename string) {
+	vm := simvolio.NewVM(simvolio.VMSettings{
+		GasLimit: 200000000,
+		Env: []simvolio.EnvItem{
+			{Name: `block`, Type: simvolio.Int},
+			{Name: `ecosystem`, Type: simvolio.Int},
+			{Name: `key`, Type: simvolio.Str},
+		},
+		Funcs: []simvolio.FuncItem{
+			{Func: readFunc, Name: `readFunc`, Read: true,
+				Params: []uint32{simvolio.Str, simvolio.Int}, Result: simvolio.Str},
+			{Func: testFunc, Name: `testFunc`, Params: []uint32{simvolio.Str, simvolio.Int}, Result: simvolio.Str},
+			{Func: fbmFunc, Name: `fbmFunc`, Params: []uint32{simvolio.Float, simvolio.Bool, simvolio.Money},
+				Result: simvolio.Str},
+			{Func: voidFunc, Name: `voidFunc`, Params: []uint32{simvolio.Str}},
+			{Func: objFunc, Name: `objFunc`, Params: []uint32{simvolio.Object}, Result: simvolio.Str},
+			{Func: printFunc, Name: `println`, Params: []uint32{simvolio.Str}},
+		},
+	})
+
+	bytecodeBody, err := ioutil.ReadFile(bytecodeFilename)
+	if err != nil {
+		fmt.Println("read bytecode file failed")
+		os.Exit(1)
+	}
+
+	contractLen := binary.LittleEndian.Uint32(bytecodeBody[:4])
+	contractBuf := bytecodeBody[4 : 4+contractLen]
+	namespaceLen := binary.LittleEndian.Uint32(bytecodeBody[4+contractLen : 4+4+contractLen])
+	namespaceBuf := bytecodeBody[4+4+contractLen : 4+4+contractLen+namespaceLen]
+
+	var cnt runtime.Contract
+	err = json.Unmarshal(contractBuf, &cnt)
+	if err != nil {
+		fmt.Println("unmarshal contract failed:", err)
+		os.Exit(1)
+	}
+
+	var nameSpace map[string]uint32
+	err = json.Unmarshal(namespaceBuf, &nameSpace)
+	if err != nil {
+		fmt.Println("unmarshal namespace failed:", err)
+		os.Exit(1)
+	}
+
+	//fmt.Println(cnt)
+	//fmt.Println(nameSpace)
+
+	vm.NameSpace = nameSpace
+	vm.Contracts = append(vm.Contracts, &cnt)
+	ind := uint32(len(vm.Contracts) - 1)
+	vm.NameSpace[cnt.Name] = ind
 
 	// 指定给合约的参数， key是参数名称
 	data := myData{
@@ -114,16 +258,6 @@ func main() {
 	}
 
 	contract0 := vm.Contracts[0]
-
-	buffer, err := json.Marshal(contract0)
-	if err != nil {
-		fmt.Println("encode contract failed:", err)
-	}
-
-	err = ioutil.WriteFile("test.bvm", buffer, 0664)
-	if err != nil {
-		fmt.Println()
-	}
 
 	result, gas, err := vm.Run(contract0, data)
 	if err != nil {

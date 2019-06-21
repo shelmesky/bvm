@@ -34,7 +34,7 @@ type objCount struct {
 }
 
 func DebugPrintf(formatString string, a ...interface{}) {
-	Debug := true
+	Debug := false
 	if Debug {
 		fmt.Printf("vm execute: ")
 		fmt.Printf(formatString, a...)

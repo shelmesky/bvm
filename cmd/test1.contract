@@ -9,7 +9,7 @@ contract testDefS {
 
     myfunction(100)
 
-    //println(s1)
+    println(s1)
 
     return
 }
