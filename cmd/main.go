@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	simvolio "github.com/shelmesky/bvm"
 	"github.com/shelmesky/bvm/runtime"
@@ -113,6 +114,16 @@ func main() {
 	}
 
 	contract0 := vm.Contracts[0]
+
+	buffer, err := json.Marshal(contract0)
+	if err != nil {
+		fmt.Println("encode contract failed:", err)
+	}
+
+	err = ioutil.WriteFile("test.bvm", buffer, 0664)
+	if err != nil {
+		fmt.Println()
+	}
 
 	result, gas, err := vm.Run(contract0, data)
 	if err != nil {
