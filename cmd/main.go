@@ -2,12 +2,12 @@ package main
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"github.com/shelmesky/bvm"
 	"github.com/shelmesky/bvm/runtime"
 	"github.com/shelmesky/bvm/types"
 	"github.com/shopspring/decimal"
+	"github.com/vmihailenco/msgpack"
 	"io/ioutil"
 	"log"
 	"os"
@@ -130,7 +130,7 @@ func Compile(inputFilename, outputFilename string) {
 	}
 
 	// 序列化合约代码
-	contractBuffer, err := json.Marshal(vm.Contracts[0])
+	contractBuffer, err := msgpack.Marshal(vm.Contracts[0])
 	if err != nil {
 		fmt.Println("encode contract failed:", err)
 	}
@@ -138,7 +138,7 @@ func Compile(inputFilename, outputFilename string) {
 	// 序列化命名空间
 	// TODO: 不在输出文件中保存namespace?
 	/* 只能保存一份固定的? */
-	namespaceBuffer, err := json.Marshal(vm.NameSpace)
+	namespaceBuffer, err := msgpack.Marshal(vm.NameSpace)
 	if err != nil {
 		fmt.Println("encode namespace failed:")
 	}
@@ -206,14 +206,14 @@ func Run(bytecodeFilename string) {
 	namespaceBuf := bytecodeBody[4+4+contractLen : 4+4+contractLen+namespaceLen]
 
 	var cnt runtime.Contract
-	err = json.Unmarshal(contractBuf, &cnt)
+	err = msgpack.Unmarshal(contractBuf, &cnt)
 	if err != nil {
 		fmt.Println("unmarshal contract failed:", err)
 		os.Exit(1)
 	}
 
 	var nameSpace map[string]uint32
-	err = json.Unmarshal(namespaceBuf, &nameSpace)
+	err = msgpack.Unmarshal(namespaceBuf, &nameSpace)
 	if err != nil {
 		fmt.Println("unmarshal namespace failed:", err)
 		os.Exit(1)
