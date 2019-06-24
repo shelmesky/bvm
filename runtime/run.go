@@ -124,39 +124,40 @@ main:
 
 		case INITVARS: // 初始化变量指令
 			count := int64(code[i+1]) // 操作数为需要初始化的变量的数量
-			DebugPrintf("INITVARS    count: %d    ", count+1)
+			DebugPrintf("INITVARS    count: %d    ", count)
 			//			newCount()
 			for iVar := int64(0); iVar < count; iVar++ {
 				var v int64
 				switch code[i+2+iVar] & 0xf { // code[i+2+iVar]保存的是需要初始化的变量的类型
 				case parser.VStr:
-					DebugPrintf("type: VStr    ")
+					fmt.Printf("type: VStr    ")
 					rt.Strings = append(rt.Strings, ``) // 空字符串
 					v = int64(len(rt.Strings) - 1)
 				case parser.VArr:
-					DebugPrintf("type: VArr    ")
+					fmt.Printf("type: VArr    ")
 					rt.Objects = append(rt.Objects, []int64{}) // 空64位整形数组
 					v = int64(len(rt.Objects) - 1)
 				case parser.VMap:
-					DebugPrintf("type: VMap    ")
+					fmt.Printf("type: VMap    ")
 					rt.Objects = append(rt.Objects, map[string]int64{}) // 空map
 					v = int64(len(rt.Objects) - 1)
 				case parser.VMoney:
-					DebugPrintf("type: VMoney    ")
+					fmt.Printf("type: VMoney    ")
 					rt.Objects = append(rt.Objects, decimal.New(0, 0)) // 空的Money类型
 					v = int64(len(rt.Objects) - 1)
 				case parser.VBytes:
-					DebugPrintf("type: VBytes    ")
+					fmt.Printf("type: VBytes    ")
 					rt.Objects = append(rt.Objects, []byte{}) // 空的字节数组类型
 					v = int64(len(rt.Objects) - 1)
 				case parser.VFile:
-					DebugPrintf("type: VFile    ")
+					fmt.Printf("type: VFile    ")
 					rt.Objects = append(rt.Objects, types.NewFile()) //空的文件类型
 					v = int64(len(rt.Objects) - 1)
+				default:
+					fmt.Printf("type: Int    ")
 				}
 				// v是已经初始化的对象在rt.Objects中保存的索引位置，将v保存在Vars数组中
 				// 因为for循环挨个初始化在code数组中保存的变量类型，所以直接按照这个顺序将索引保存在Vars数组中
-				DebugPrintf("type: Int type    ")
 				Vars = append(Vars, v)
 			}
 			fmt.Printf("\n")
