@@ -14,6 +14,10 @@ import (
 	"strings"
 )
 
+const (
+	magicWords = 0x55aa
+)
+
 var (
 	vmConfig = simvolio.VMSettings{
 		GasLimit: 200000000,
@@ -150,11 +154,19 @@ func Compile(inputFilename, outputFilename string) {
 		os.Exit(1)
 	}
 
+	magicWordsBuf := make([]byte, 4)
+	binary.LittleEndian.PutUint32(magicWordsBuf, magicWords)
+	n, err := outputFile.Write(magicWordsBuf)
+	if n != 4 || err != nil {
+		fmt.Println("write magic words failed:", err, n)
+		os.Exit(1)
+	}
+
 	// 写入合约代码长度
 	contractBufferLen := len(contractBuffer)
 	lenBuffer := make([]byte, 4)
 	binary.LittleEndian.PutUint32(lenBuffer, uint32(contractBufferLen))
-	n, err := outputFile.Write(lenBuffer)
+	n, err = outputFile.Write(lenBuffer)
 	if n != 4 || err != nil {
 		fmt.Println("write contract code length failed:", err, n)
 		os.Exit(1)
@@ -199,6 +211,14 @@ func Run(bytecodeFilename string) {
 		fmt.Println("read bytecode file failed")
 		os.Exit(1)
 	}
+
+	magicWordsBuf := bytecodeBody[:4]
+	if magicWords != binary.LittleEndian.Uint32(magicWordsBuf) {
+		fmt.Println("invalid bvm file, close VM.")
+		os.Exit(1)
+	}
+
+	bytecodeBody = bytecodeBody[4:]
 
 	contractLen := binary.LittleEndian.Uint32(bytecodeBody[:4])
 	contractBuf := bytecodeBody[4 : 4+contractLen]
