@@ -457,16 +457,16 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 			return cmpl.ErrorParam(node, errFuncExists, nFunc.Name)
 		}
 
-		start := len(cmpl.Contract.Code) // 目前合约所有的代码
-		cmpl.Append(rt.JMP, 0)           // 在代码中插入JMP, 0指令
-		finfo.Offset = start + 2         // 函数代码在
-		cmpl.InFunc = true               // 设置"在函数中"标志为true
-
 		// 初始化函数参数: 在code数组中插入[INITVARS, 类型长度，类型列表]
 		// 为函数调用前做准备
 		if err = cmpl.InitVars(node, nFunc.Params); err != nil {
 			return err
 		}
+
+		start := len(cmpl.Contract.Code) // 目前合约所有的代码
+		cmpl.Append(rt.JMP, 0)           // 在代码中插入JMP, 0指令
+		finfo.Offset = start + 2         // 函数代码在
+		cmpl.InFunc = true               // 设置"在函数中"标志为true
 
 		// 如果函数有参数，则插入[GETPARAMS, 参数长度]指令
 		// 这个指令会在函数执行之前从栈中获取每个参数的值，将这些值复制给之前初始化的参数

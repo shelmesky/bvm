@@ -137,6 +137,7 @@ main:
 					fmt.Printf("type: VArr    ")
 					rt.Objects = append(rt.Objects, []int64{}) // 空64位整形数组
 					v = int64(len(rt.Objects) - 1)
+					fmt.Println()
 				case parser.VMap:
 					fmt.Printf("type: VMap    ")
 					rt.Objects = append(rt.Objects, map[string]int64{}) // 空map
@@ -261,7 +262,10 @@ main:
 			i++
 			top++
 			DebugPrintf("SETVAR    Vars_index: %d, Vars array length:[%d]\n", code[i], len(Vars))
-			stack[top] = int64(uintptr(unsafe.Pointer(&Vars[code[i]])))
+			a := code[i]
+			b := Vars[a]
+			c := &b
+			stack[top] = int64(uintptr(unsafe.Pointer(c)))
 
 		case JMP:
 			i += int64(int16(code[i+1]))
@@ -522,10 +526,13 @@ main:
 			DebugPrintf("ASSIGNADDSTR\n")
 
 		case APPENDARR:
-			ind := *(*int64)(unsafe.Pointer(uintptr(stack[top-1])))
+			a := stack[top-1]
+			b := uintptr(a)
+			c := (*int64)(unsafe.Pointer(b))
+			ind := *c
+			DebugPrintf("APPENDARR    index: %d    Objects length:%d\n", ind, len(rt.Objects))
 			rt.Objects[ind] = append(rt.Objects[ind].([]int64), stack[top])
 			top -= 2
-			DebugPrintf("APPENDARR\n")
 
 		case GETINDEX:
 			switch v := rt.Objects[stack[top-1]].(type) {
@@ -544,6 +551,8 @@ main:
 			DebugPrintf("GETINDEX\n")
 
 		case SETINDEX:
+			idx := stack[top-1]
+			DebugPrintf("SETINDEX    index:%d    Objects length: %d\n", idx, len(rt.Objects))
 			switch v := rt.Objects[stack[top-1]].(type) {
 			case []int64:
 				if stack[top] >= int64(len(v)) || stack[top] < 0 {
@@ -554,7 +563,6 @@ main:
 					return ``, gas, fmt.Errorf(errIndexOut, stack[top], len(v))
 				}
 			}
-			DebugPrintf("SETINDEX\n")
 
 		case GETMAP:
 			imap := rt.Objects[stack[top-1]].(map[string]int64)

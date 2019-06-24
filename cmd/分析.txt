@@ -1,0 +1,47 @@
+编译器中，TVars类型的变量，生成指令INITVARS和SETVAR.
+
+INITVARS是初始化变量，SETVAR是设置变量的值。
+
+func myfunc1(str aaa, str bbb) str {
+        arr.int myintarr
+        myintarr += 112
+        return aaa + bbb
+}
+
+myfunc1("xxxx", "yyyy")
+
+
+compile node type: TVars
+compile node type: TBinary
+compile node type: TSetVar
+
+
+vm execute: PUSHSTR    start:16    end: 20	// 向栈顶保存了字符串在rt.Strings总的index:9
+vm execute: PUSHSTR    start:20    end: 24	// 向栈顶保存了字符串在rt.Strings总的index:10
+vm execute: CALLFUNC    IP:20
+vm execute: GETPARAMS    idx: 2	// 从栈顶开始循环将函数参数放在Vars变量中
+vm execute: INITVARS    count: 1    type: VArr    
+vm execute: SETVAR    Vars_index: 2, Vars array length:[4]	// 在栈定保存SETVAR的参数2, 即
+vm execute: PUSH16    112
+vm execute: APPENDARR    index: 10    Objects length:2
+
+Vars用来保存所有类型的变量，如字符串、list、map、int等类型在rt.Strings/rt.Objects中的索引位置。
+
+SETVAR指令中的作用是将某变量的索引值放在栈顶：
+
+a := code[i]
+b := Vars[a]
+
+code[i]指定了SETVAR的变量在Vars数组中的索引，Vars[a]指定了从Vars数组中找到真正在rt.Strings或rt.Objects中的索引位置。
+
+生成的指令列表中，SETVAR代码的过程a和b索引到了错误的Vars位置。
+
+在INITVARS指令处，初始化了数组类型，所以rt.Objects的长度为2.
+APPENDARR指令打印Objects长度为2，但索引的却是10.
+
+
+编译时，观察TBinary和TSetVar指令，生成的index也是2。即在cmpl.Contract.Vars数组中的位置。
+
+在编译时只使用cmpl.Contract.Vars数组，但是运行时使用了Vars和rt.String/rt.Ojbects数组，映射出现错误？
+
+

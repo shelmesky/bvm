@@ -1,24 +1,22 @@
 contract testDefS {
-    data {
-        str s1
-        int a1
-        int b2
-        str b3
-    }
 
     // 全局变量声明放在代码最开始
-    arr.str ai
-    arr.int aaa
 
-    func myfunction(str a) str {
-            arr.str myarr1
-            myarr1 += `abcdefg`
-            return a + `...`
+    func myfunc1(str aaa, str bbb) str {
+        arr.int myintarr
+        myintarr += 112
+        return aaa + bbb
     }
 
-    myfunction("gogogo")
+     func myfunction(str a) str {
+                arr.str myarr1
+                myarr1 += `abcdefg`
+                return a + `...`
+     }
 
-    ai += `hahaha`
+    myfunction("gogogo")
+    myfunc1("xxxx", "yyyy")
+
 
     return
 }
