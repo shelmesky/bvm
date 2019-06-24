@@ -34,7 +34,7 @@ type objCount struct {
 }
 
 func DebugPrintf(formatString string, a ...interface{}) {
-	Debug := false
+	Debug := true
 	if Debug {
 		fmt.Printf("vm execute: ")
 		fmt.Printf(formatString, a...)
@@ -124,7 +124,7 @@ main:
 
 		case INITVARS: // 初始化变量指令
 			count := int64(code[i+1]) // 操作数为需要初始化的变量的数量
-			DebugPrintf("INITVARS    count: %d    ", count)
+			DebugPrintf("INITVARS    count: %d    ", count+1)
 			//			newCount()
 			for iVar := int64(0); iVar < count; iVar++ {
 				var v int64
@@ -156,9 +156,10 @@ main:
 				}
 				// v是已经初始化的对象在rt.Objects中保存的索引位置，将v保存在Vars数组中
 				// 因为for循环挨个初始化在code数组中保存的变量类型，所以直接按照这个顺序将索引保存在Vars数组中
+				DebugPrintf("type: Int type    ")
 				Vars = append(Vars, v)
 			}
-			DebugPrintf("\n")
+			fmt.Printf("\n")
 			i += count + 1
 
 		case DELVARS:
@@ -258,8 +259,8 @@ main:
 		case SETVAR:
 			i++
 			top++
+			DebugPrintf("SETVAR    Vars_index: %d, Vars array length:[%d]\n", code[i], len(Vars))
 			stack[top] = int64(uintptr(unsafe.Pointer(&Vars[code[i]])))
-			DebugPrintf("SETVAR    Vars_index: %d\n", code[i])
 
 		case JMP:
 			i += int64(int16(code[i+1]))

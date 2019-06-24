@@ -1,13 +1,11 @@
 package main
 
 import (
-	"encoding/binary"
 	"fmt"
 	"github.com/shelmesky/bvm"
 	"github.com/shelmesky/bvm/runtime"
 	"github.com/shelmesky/bvm/types"
 	"github.com/shopspring/decimal"
-	"github.com/vmihailenco/msgpack"
 	"io/ioutil"
 	"log"
 	"os"
@@ -83,6 +81,67 @@ func printUsage() {
 }
 
 func main() {
+
+	inputFilename := os.Args[1]
+
+	if len(inputFilename) == 0 {
+		fmt.Println("need filename")
+		os.Exit(1)
+	}
+
+	vm := simvolio.NewVM(vmConfig)
+
+	content, err := ioutil.ReadFile(inputFilename)
+	if err != nil {
+		log.Fatal("ReadFile failed:", err)
+	}
+
+	list := strings.Split(string(content), "\n")
+	source := make([]string, 0, 32)
+
+	for _, line := range list {
+		source = append(source, line)
+	}
+
+	contractBody := strings.Join(source, "\r\n")
+
+	err = vm.LoadContract(contractBody, 0)
+	if err != nil {
+		log.Fatal("LoadContract failed:", err)
+	}
+
+	// 指定给合约的参数， key是参数名称
+	data := myData{
+		Env: []interface{}{7, 1, `0122afcd34`},
+		Params: map[string]interface{}{
+			`pInt`:   "123",
+			`pStr`:   `OK`,
+			`pMoney`: `32562365237623`,
+			`pBool`:  `false`,
+			`pFloat`: `23.834`,
+			`pBytes`: `31325f`,
+			`bBytes`: []byte{33, 39, 0x5b, 0},
+			`fFile`:  types.FileInit(`myfile.txt`, `text`, []byte{45, 47, 00, 32}),
+
+			`s1`: `s1s1s1s1s1s1s1`,
+		},
+	}
+
+	contract0 := vm.Contracts[0]
+
+	result, gas, err := vm.Run(contract0, data)
+	if err != nil {
+		log.Fatal("vm.Run failed:", err)
+	}
+
+	fmt.Printf("\nvm.Run: [result: %s], [gas: %d], [error: %v]\n", result, gas, err)
+
+	os.Exit(0)
+
+}
+
+/*
+func main() {
 	if len(os.Args) == 1 {
 		printUsage()
 	}
@@ -141,7 +200,7 @@ func Compile(inputFilename, outputFilename string) {
 
 	// 序列化命名空间
 	// TODO: 不在输出文件中保存namespace?
-	/* 只能保存一份固定的? */
+	// 只能保存一份固定的?
 	namespaceBuffer, err := msgpack.Marshal(vm.NameSpace)
 	if err != nil {
 		fmt.Println("encode namespace failed:")
@@ -275,3 +334,4 @@ func Run(bytecodeFilename string) {
 
 	os.Exit(0)
 }
+*/
