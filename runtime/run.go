@@ -253,12 +253,17 @@ main:
 			DebugPrintf("DUP\n")
 
 		case GETVAR:
+			DebugPrintf("GETVAR    Vars_index: %d\n", code[i])
 			i++
 			top++
-			stack[top] = Vars[code[i]]
-			DebugPrintf("GETVAR    Vars_index: %d\n", code[i])
+			a := code[i]
+			b := Vars[a]
+			stack[top] = b
 
 		case SETVAR:
+			// 将code[i]值作为索引在Vars中寻找
+			// 并将Vars[x]当作变量取其地址， 将地址放在栈顶
+			// 本质是获取Vars数组中某个项的值
 			i++
 			top++
 			DebugPrintf("SETVAR    Vars_index: %d, Vars array length:[%d]\n", code[i], len(Vars))
@@ -343,10 +348,10 @@ main:
 			DebugPrintf("ASSIGNMODINT\n")
 
 		case CALLFUNC: // 函数调用
-			calls[coff] = i + 2
-			calls[coff+1] = int64(len(Vars))
-			coff += 2
-			i += int64(int16(code[i+1]))
+			calls[coff] = i + 2              // 在coff处将当前指令后的2条指令指针保存
+			calls[coff+1] = int64(len(Vars)) //在coff+1处保存Vars数组的长度
+			coff += 2                        // coff变量+2
+			i += int64(int16(code[i+1]))     // 为函数调用修改变量指针地址
 			DebugPrintf("CALLFUNC    IP:%d\n", i)
 			continue
 
@@ -453,7 +458,9 @@ main:
 
 		case LOADPARS: // 从本函数的参数params中载入参数
 			for j := 0; j < (len(params) >> 1); j++ {
-				Vars[params[j<<1]] = params[(j<<1)+1]
+				a := params[j<<1]
+				b := (j << 1) + 1
+				Vars[a] = params[b]
 			}
 			DebugPrintf("LOADPARS    pars_count: %d\n", len(params))
 
@@ -473,9 +480,14 @@ main:
 			DebugPrintf("PARCONTRACT\n")
 
 		case GETPARAMS:
+			// code[i]是参数的数量
+			// 将N个从栈复制到Vars数组中
+			// 栈上保存的是调用函数前PUSH指令放到栈上的参数索引
+			// 参数可能在
 			i++
 			for k := 1; k <= int(code[i]); k++ {
-				Vars[len(Vars)-k] = stack[top]
+				a := len(Vars) - k
+				Vars[a] = stack[top]
 				top--
 			}
 			DebugPrintf("GETPARAMS    idx: %d\n", code[i])
@@ -487,9 +499,11 @@ main:
 
 		case RETFUNC:
 			DebugPrintf("RETFUNC\n")
-			Vars = Vars[:calls[coff-1]]
+			a := coff - 1
+			b := calls[a]
+			Vars = Vars[:b]	// 恢复Vars数组
 			coff -= 2
-			i = calls[coff]
+			i = calls[coff]	// 恢复指令指针
 			continue
 
 		case SIGNINT:

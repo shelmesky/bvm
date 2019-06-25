@@ -20,7 +20,7 @@ vm execute: PUSHSTR    start:16    end: 20	// 向栈顶保存了字符串在rt.S
 vm execute: PUSHSTR    start:20    end: 24	// 向栈顶保存了字符串在rt.Strings总的index:10
 vm execute: CALLFUNC    IP:20
 vm execute: GETPARAMS    idx: 2	// 从栈顶开始循环将函数参数放在Vars变量中
-vm execute: INITVARS    count: 1    type: VArr    
+vm execute: INITVARS    count: 1    type: VArr    // 向栈顶保存了数组在rt.Objects总的index:2
 vm execute: SETVAR    Vars_index: 2, Vars array length:[4]	// 在栈定保存SETVAR的参数2, 即
 vm execute: PUSH16    112
 vm execute: APPENDARR    index: 10    Objects length:2
@@ -44,4 +44,287 @@ APPENDARR指令打印Objects长度为2，但索引的却是10.
 
 在编译时只使用cmpl.Contract.Vars数组，但是运行时使用了Vars和rt.String/rt.Ojbects数组，映射出现错误？
 
+---------------------------------------------------------------------------------------------------------------------
 
+contract testDefS {
+
+    // 全局变量声明放在代码最开始
+
+    func myfunc1() {
+        arr.int myintarr
+        myintarr += 112
+    }
+
+     func myfunction(str a) str {
+                arr.str myarr1
+                myarr1 += `abcdefg`
+                return a + `...`
+     }
+
+    myfunction("gogogo")
+    myfunc1()
+
+
+    return
+}
+
+---------------------------------------------------------------------------------------------------------------------
+
+vm execute: DATA    length: 8
+
+vm execute: JMP    label: 1
+rt.Strings: ["", "0122afcd34"]
+Vars: []
+
+
+vm execute: INITVARS    count: 1    type: VStr
+rt.Strings: ["", "0122afcd34", ""]
+Vars: [2]   // 初始化myfunction函数的参数str a， 将其在rt.Strings中的索引保存在Vars中
+
+
+vm execute: JMP    label: 10
+rt.Strings: ["", "0122afcd34", ""]
+Vars: [2]
+
+
+vm execute: PUSHSTR    start:10    end: 16
+rt.Strings: ["", "0122afcd34", "", "gogogo"]
+Vars: [2]
+
+
+vm execute: CALLFUNC    IP:28
+rt.Strings: ["", "0122afcd34", "", "gogogo"]
+Vars: [2]
+
+
+vm execute: GETPARAMS    idx: 1
+rt.Strings: ["", "0122afcd34", "", "gogogo"]
+Vars: [3]   // 将gogogo这个字符串索引覆盖了之前str a参数的索引
+
+
+vm execute: INITVARS    count: 1    type: VArr
+rt.Strings: ["", "0122afcd34", "", "gogogo"]
+Vars :[3, 0]    // 初始化arr.str myarr1字符串数组， 将其在rt.Objects中的索引保存在Vars中
+
+
+vm execute: SETVAR    Vars_index: 1, Vars array length:[2]
+rt.Strings: ["", "0122afcd34", "", "gogogo"]
+Vars :[3, 0]
+// SETVAR的参数是1, Vars[1]的值是0, 将0这个位置的地址指针保存在stack[top]
+// Vars[1]这个位置的索引值是arr.str myarr1
+
+vm execute: PUSHSTR    start:0    end: 7
+rt.Strings: ["", "0122afcd34", "", "gogogo", "abcdefg"]
+Vars :[3, 0]
+// 将abcdefg字符串放在rt.Strings数组中
+// 并在栈顶保存其在rt.Strings中的索引位置
+
+vm execute: APPENDARR    index: 0    Objects length:1
+rt.Strings: ["", "0122afcd34", "", "gogogo", "abcdefg"]
+Vars :[3, 0]
+// 将之前SETVAR命令中指定的arr.str myarr1变量的地址从stack[top-1]中取出
+// 为什么是top-1， 因为APPENDARR指令不带参数， 它的参数需要从栈中取出
+// 而top-1保存的值就是SETVAR指令保存的myarr1变量的在rt.Objecst的索引值， 这个索引值保存在Vars中的索引的地址。
+// 拿到这个地址， 经过指针解引用， 相当与方位了Vars[1]这个位置的值。
+// 而Vars[1]的值是0, 即APPENDARR在rt.Objects[0]的这个元素append数据。
+// rt.Objects[0]就是myarr1数组.
+
+
+vm execute: GETVAR    Vars_index: 0
+rt.Strings: ["", "0122afcd34", "", "gogogo", "abcdefg"]
+Vars :[3, 0]
+// 在栈定保存gogogo字符串在在Vars中的索引位置3
+// stack[top] = Vars[code[i]]
+
+
+vm execute: PUSHSTR    start:7    end: 10
+rt.Strings: ["", "0122afcd34", "", "gogogo", "abcdefg", "..."]
+Vars :[3, 0]
+// rt.Strings增加字符串...， 并在栈顶保存其在rt.Strings中的索引
+
+
+vm execute: ADDSTR
+rt.Strings: ["", "0122afcd34", "", "gogogo", "abcdefg", "...", "gogogo..."]
+Vars :[3, 0]
+// 在rt.Strings中保存栈顶的两个字符串相加， 即gogogo + ...
+// 然后在栈定保存相加后的字符串在rt.Strings的索引
+
+
+vm execute: RETFUNC
+// 从函数myfunction中返回， 并设置Vars数组
+rt.Strings: ["", "0122afcd34", "", "gogogo", "abcdefg", "...", "gogogo..."]
+Vars :[3]
+
+
+vm execute: CALLFUNC    IP:12
+// 调用函数myfunc1
+
+
+vm execute: INITVARS    count: 1    type: VArr
+// 初始化变量 arr.int myintarr
+rt.Strings: ["", "0122afcd34", "", "gogogo", "abcdefg", "...", "gogogo..."]
+rt.Objects: [[4], []]
+Vars :[3, 1] // 新增的1是myintarr变量在rt.Objecst中的索引
+
+
+vm execute: SETVAR    Vars_index: 0, Vars array length:[2]
+// 到这里开始出问题:
+// a := code[i]
+// b := Vars[a]
+// c := &b
+// code[i]的结果即SETVAR的参数是0, 而Vars[0]保存的是3,
+// 这个是gogogo字符串在rt.Strings中的索引
+// 最后将这个Vars[a]的值保存在栈顶
+
+
+vm execute: PUSH16    112
+// 将数字112放在栈顶
+
+
+vm execute: APPENDARR    index: 3    Objects length:2
+// 使用SETVAR设置的值3, 在rt.Objects中索引数组myintarr
+// myintarr保存在rt.Objecst[1]的位置， 并不是3
+
+panic: runtime error: index out of range
+
+---------------------------------------------------------------------------------------------------------------------
+
+contract testDefS {
+
+    func myfunc1(str a, str b, str c, str d, str e) str {
+        return "111"
+    }
+
+    myfunc1("000", "111", "222", "333", "444")
+
+    return
+}
+
+
+vm execute: DATA    length: 9
+vm execute: JMP    label: 3
+
+
+// 将多个参数放在rt.Strings数组中，将其索引放在栈顶
+vm execute: PUSHSTR    start:3    end: 6
+vm execute: PUSHSTR    start:6    end: 9
+vm execute: PUSHSTR    start:9    end: 12
+vm execute: PUSHSTR    start:12    end: 15
+vm execute: PUSHSTR    start:15    end: 18
+
+
+// 调用函数:
+// calls[coff] = i + 2              // 在coff处将当前指令后的2条指令指针保存
+// calls[coff+1] = int64(len(Vars)) //在coff+1处保存Vars数组的长度
+// coff += 2                        // coff变量+2
+// i += int64(int16(code[i+1]))     // 为函数调用修改变量指针地址
+vm execute: CALLFUNC    IP:13
+
+
+// 初始化函数参数: 初始化变量放在rt.Strings中，将起索引放在Vars数组中.
+// 栈上保存的是调用函数前PUSH指令放到栈上的参数索引
+vm execute: INITVARS    count: 5    type: VStr    type: VStr    type: VStr    type: VStr    type: VStr
+
+
+// 获取函数参数: 将PUSHSTR放在栈顶的参数(索引)复制给Vars数组中
+vm execute: GETPARAMS    idx: 5
+
+
+vm execute: PUSHSTR    start:0    end: 3
+
+
+// 将返回值压入栈顶
+vm execute: RETFUNC
+
+
+// 返回到调用函数：
+// Vars = Vars[:b]	// 恢复Vars数组
+// i = calls[coff]	// 恢复指令指针
+vm execute: RETURN
+
+
+INITVARS增加Vars数组，GETPARAMS设置Vars数组，RETFUNC减少RET数组。
+
+在函数调用开始的指令CALLFUNC会保存Vars数组的长度，函数执行期间由于INITVARS指令Vars数组会增长，但RETFUNC指令又会恢复Vars数组的长度。
+
+导致下面的函数问题：
+
+contract testDefS {
+
+    func myfunc1(str b) str {
+        arr.str as
+        as += `aaa`
+        return ""
+    }
+
+    myfunc1("aaa")
+
+    arr.int ai
+    // 全局变量声明放在代码最开始
+    ai += 100
+
+    return
+}
+
+myfunc1函数调用前后，Vars数组的长度没有发生变化，即ai变量的索引值还是错误的。
+这和下面的代码效果一样：
+
+contract testDefS {
+
+    func myfunc1(str b) str {
+        arr.str as
+        as += `aaa`
+        return ""
+    }
+
+    arr.int ai
+    // 全局变量声明放在代码最开始
+    ai += 100
+
+    return
+}
+
+ai变量在Vars数组中保存的索引为1, 即Vars数组长度需要为2.
+但由于myfunc1在编译时在Contract.Vars数组中有占位，但VM执行时没有执行myfunc1的INITVARS指令，导致Vars数组长度为1.
+
+及时没有全局变量，只有函数和调用，也有存在问题：
+
+contract testDefS {
+
+    func myfunc1(str a) str {
+        arr.str as
+        as += `aaa`
+        return ""
+    }
+
+
+    func myfunc2(str b) str {
+        arr.str bs
+        bs += `aaa`
+        return ""
+    }
+
+    myfunc1("aaa")
+    myfunc2("bbb")
+
+    return
+}
+
+按照编译是的顺序，contract.Vars数组中的变量依次是：
+0: str a
+1: arr.str as
+2: str b
+3: arr.str bs
+
+bs += `aaa`这行代码被编译为：
+1. SETVAR
+2. APPENDARR
+在字节码中SETVAR的参数是 3，但在实际执行时，Vars数组的长度只有2. 即myfunc2自己的参数和bs变量这两个。
+而myfunc1在调用结束后，Vars数组清空。
+
+实际报错也是如此：
+
+vm execute: SETVAR    Vars_index: 2, Vars array length:[2]
+panic: runtime error: index out of range
+
+SETVAR想索引Vars[2]即第3个项，但Vars数组实际只有2个元素。

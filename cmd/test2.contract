@@ -1,0 +1,10 @@
+contract testDefS {
+
+    func myfunc1(str a, str b, str c, str d, str e) str {
+        return "111"
+    }
+
+    myfunc1("000", "111", "222", "333", "444")
+
+    return
+}

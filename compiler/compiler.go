@@ -78,6 +78,14 @@ func (cmpl *compiler) ConditionCode(node *parser.Node) (before int, after int, e
 	return
 }
 
+/*
+在Contract.Vars保存变量， 并将变量的出现顺序作为字节码操作的索引， 例如SETVAR/GETVAR指令。
+然后生成INITVARS指令， 指令的参数是需要初始化的变量数量。
+编译是有3个地方调用本函数：
+1. 合约的参数部分， 即data块。
+2. 函数定义中的参数列表。
+3. 声明一个变量。
+*/
 func (cmpl *compiler) InitVars(node *parser.Node, vars []parser.NVar) error {
 	if len(vars) == 0 {
 		return nil
@@ -156,8 +164,8 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 			cmpl.Contract.Code[len(cmpl.Contract.Code)-1] != rt.RETFUNC {
 			cmpl.Append(rt.DELVARS, rt.Bcode(varsCount))
 		}
-		// 编译一个contract后删除在编译过程中的变量和函数，
-		// 因为cmpl.Contract和cmpl.NameSpace在编译下个合约时会重复使用 ???
+		// vinfo.Index >= varsCount说明在进入Block编译后，比进入Block之前多了很多变量，这些变量是Block内的变量
+		// 应该在contract.Vars中删除这些局部变量?
 		// Remove vars
 		for key, vinfo := range cmpl.Contract.Vars {
 			if vinfo.Index >= varsCount {
@@ -457,16 +465,16 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 			return cmpl.ErrorParam(node, errFuncExists, nFunc.Name)
 		}
 
+		start := len(cmpl.Contract.Code) // 目前合约所有的代码
+		cmpl.Append(rt.JMP, 0)           // 在代码中插入JMP, 0指令
+		finfo.Offset = start + 2         // 函数代码在
+		cmpl.InFunc = true               // 设置"在函数中"标志为true
+
 		// 初始化函数参数: 在code数组中插入[INITVARS, 类型长度，类型列表]
 		// 为函数调用前做准备
 		if err = cmpl.InitVars(node, nFunc.Params); err != nil {
 			return err
 		}
-
-		start := len(cmpl.Contract.Code) // 目前合约所有的代码
-		cmpl.Append(rt.JMP, 0)           // 在代码中插入JMP, 0指令
-		finfo.Offset = start + 2         // 函数代码在
-		cmpl.InFunc = true               // 设置"在函数中"标志为true
 
 		// 如果函数有参数，则插入[GETPARAMS, 参数长度]指令
 		// 这个指令会在函数执行之前从栈中获取每个参数的值，将这些值复制给之前初始化的参数
