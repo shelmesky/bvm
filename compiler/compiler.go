@@ -304,7 +304,8 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 		}
 		cmpl.Contract.Code[sizeCode+1] = off
 		node.Result = nQuestion.Left.Result
-	case parser.TValue:
+
+	case parser.TValue: // 某种类型的字面值，例如123, "abc", 0.12等
 		switch v := node.Value.(type) {
 		case int64:
 			if v <= math.MaxInt16 && v >= math.MinInt16 {
@@ -340,24 +341,28 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 		default:
 			return cmpl.ErrorParam(node, errType, node.Value)
 		}
-	case parser.TVars:
+
+	case parser.TVars: // 定义新的变量，例如 str a，或赋值str a = "aaa"
 		if err = cmpl.InitVars(node, node.Value.(*parser.NVars).Vars); err != nil {
 			return err
 		}
-	case parser.TGetVar:
+
+	case parser.TGetVar: // 在表达式中出现的变量，需要对其求值
 		name := node.Value.(*parser.NVarValue).Name
 		if vinfo, ok = cmpl.Contract.Vars[name]; !ok {
 			return cmpl.ErrorParam(node, errVarUnknown, name)
 		}
 		cmpl.Append(rt.GETVAR, rt.Bcode(vinfo.Index))
 		node.Result = uint32(vinfo.Type)
-	case parser.TSetVar:
+
+	case parser.TSetVar: // 在语句中出现的变量，即单独一行语句。例如定义变量：var_a，或复制 var_a = "111"
 		name := node.Value.(*parser.NVarValue).Name
 		if vinfo, ok = cmpl.Contract.Vars[name]; !ok {
 			return cmpl.ErrorParam(node, errVarUnknown, name)
 		}
 		cmpl.Append(rt.SETVAR, rt.Bcode(vinfo.Index))
 		node.Result = uint32(vinfo.Type)
+
 	case parser.TWhile:
 		nWhile := node.Value.(*parser.NWhile)
 		cmpl.Jumps = append(cmpl.Jumps, &jumps{})
