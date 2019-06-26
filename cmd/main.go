@@ -129,6 +129,7 @@ func main() {
 
 	contract0 := vm.Contracts[0]
 
+	fmt.Println("")
 	result, gas, err := vm.Run(contract0, data)
 	if err != nil {
 		log.Fatal("vm.Run failed:", err)

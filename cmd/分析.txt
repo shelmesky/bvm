@@ -242,6 +242,13 @@ vm execute: RETFUNC
 // i = calls[coff]	// 恢复指令指针
 vm execute: RETURN
 
+这里有3个连续的指令，完成了传参的功能，分别是:
+
+PUSHSTR: 将字符串放在Strings数组，将索引放在栈顶
+INITVARS: 初始化参数字符串为空字符串并存放在Strings数组，然后将索引放在Vars数组
+GETPARAMS: 根据参数的个数，循环将Vars[index]值替换为stack[top]的值，
+即用PUSHSTR存放在Strings数组中的调用参数索引替换INITVARS生成的实际参数索引。
+
 
 INITVARS增加Vars数组，GETPARAMS设置Vars数组，RETFUNC减少RET数组。
 
@@ -310,21 +317,21 @@ contract testDefS {
     return
 }
 
-按照编译是的顺序，contract.Vars数组中的变量依次是：
-0: str a
-1: arr.str as
-2: str b
-3: arr.str bs
 
-bs += `aaa`这行代码被编译为：
-1. SETVAR
-2. APPENDARR
-在字节码中SETVAR的参数是 3，但在实际执行时，Vars数组的长度只有2. 即myfunc2自己的参数和bs变量这两个。
-而myfunc1在调用结束后，Vars数组清空。
+Contract.Vars数组变化如下：
+编译str a时， index为0
+编译arr.str as时，index为1
+编译完成myfunc1函数，从Vars数组删除as变量，只剩str a
+编译str b时，index为1
+编译arr.str bs时，索引为2
 
-实际报错也是如此：
+问题的本质出在，运行时：
 
-vm execute: SETVAR    Vars_index: 2, Vars array length:[2]
-panic: runtime error: index out of range
+CALLFUNC指令保存函数返回时的位置，并保存当前Vars数组的长度。
+INITVARS创建str a
+INITVARS创建arr.str as
+RETRUNC返回恢复指令位置，同时恢复Vars数组长度。
 
-SETVAR想索引Vars[2]即第3个项，但Vars数组实际只有2个元素。
+进入之前Vars为0, 退出函数调用之后Vars长度依然为0.
+
+但这样就和编译时冲突，编译时当函数体编译完毕，只会删除除了参数意外

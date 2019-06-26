@@ -154,24 +154,29 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 			}
 			cmpl.Append(rt.LOADPARS) // 生成LOADPARS指令
 		}
+
 		for _, child := range node.Value.(*parser.NBlock).Statements { // 编译block中的语句
 			if err = nodeToCode(child, cmpl); err != nil {
 				return err
 			}
 		}
+
 		cmpl.Blocks = cmpl.Blocks[:len(cmpl.Blocks)-1]
-		if uint16(len(cmpl.Contract.Vars)) != varsCount &&
-			cmpl.Contract.Code[len(cmpl.Contract.Code)-1] != rt.RETFUNC {
-			cmpl.Append(rt.DELVARS, rt.Bcode(varsCount))
-		}
+
+		//if uint16(len(cmpl.Contract.Vars)) != varsCount &&
+		//	cmpl.Contract.Code[len(cmpl.Contract.Code)-1] != rt.RETFUNC {
+		//	cmpl.Append(rt.DELVARS, rt.Bcode(varsCount))
+		//}
+
 		// vinfo.Index >= varsCount说明在进入Block编译后，比进入Block之前多了很多变量，这些变量是Block内的变量
 		// 应该在contract.Vars中删除这些局部变量?
 		// Remove vars
-		for key, vinfo := range cmpl.Contract.Vars {
-			if vinfo.Index >= varsCount {
-				delete(cmpl.Contract.Vars, key)
-			}
-		}
+
+		//for key, vinfo := range cmpl.Contract.Vars {
+		//	if vinfo.Index >= varsCount {
+		//		delete(cmpl.Contract.Vars, key)
+		//	}
+		//}
 		if funcsCount < len(cmpl.Contract.Funcs) {
 			// Remove funcs
 			for i := funcsCount; i < len(cmpl.Contract.Funcs); i++ {

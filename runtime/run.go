@@ -137,7 +137,6 @@ main:
 					fmt.Printf("type: VArr    ")
 					rt.Objects = append(rt.Objects, []int64{}) // 空64位整形数组
 					v = int64(len(rt.Objects) - 1)
-					fmt.Println()
 				case parser.VMap:
 					fmt.Printf("type: VMap    ")
 					rt.Objects = append(rt.Objects, map[string]int64{}) // 空map
@@ -266,9 +265,13 @@ main:
 			// 本质是获取Vars数组中某个项的值
 			i++
 			top++
-			DebugPrintf("SETVAR    Vars_index: %d, Vars array length:[%d]\n", code[i], len(Vars))
 			a := code[i]
+			if int(a) > len(Vars) - 1 {
+				DebugPrintf("SETVAR    code[i]:%d  Vars_Length:[%d]  index failed!!!\n", a, len(Vars))
+				return ``, gas, fmt.Errorf("SETVAR index failed!\n")
+			}
 			b := Vars[a]
+			DebugPrintf("SETVAR    code[i]:%d,  Vars[code[i]]:%d  Vars_length:[%d]\n", a, b, len(Vars))
 			c := &b
 			stack[top] = int64(uintptr(unsafe.Pointer(c)))
 
@@ -499,11 +502,11 @@ main:
 
 		case RETFUNC:
 			DebugPrintf("RETFUNC\n")
-			a := coff - 1
-			b := calls[a]
-			Vars = Vars[:b]	// 恢复Vars数组
+			//a := coff - 1
+			//b := calls[a]
+			//Vars = Vars[:b] // 恢复Vars数组
 			coff -= 2
-			i = calls[coff]	// 恢复指令指针
+			i = calls[coff] // 恢复指令指针
 			continue
 
 		case SIGNINT:
