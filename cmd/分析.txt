@@ -334,4 +334,150 @@ RETRUNC返回恢复指令位置，同时恢复Vars数组长度。
 
 进入之前Vars为0, 退出函数调用之后Vars长度依然为0.
 
-但这样就和编译时冲突，编译时当函数体编译完毕，只会删除除了参数意外
+但这样就和编译时冲突，编译时当函数体编译完毕，只会删除除了参数以外。
+
+解决方案：
+1. 编译时不删除任何变量，这样变量的index就变成自增
+2. 运行时到RETFUNC指令时不恢复Vars数组
+
+但这样就带来一个新问题，由于在编译时只书用了一个数组Contract.Vars，字节码中的索引都是指这个数组中索引。
+但运行时分为两个数组，Strings存储字符串，Objects存储array和map，
+导致运行时如果这两个数组都有元素，那么编译的索引在运行时就对不上号了。
+
+例如下面的代码：
+
+contract testDefS {
+
+    func myfunc1(str a) str {   // a: 0
+        arr.str as              // as: 1
+        as += `aaa`
+        return ""
+    }
+
+
+
+    func myfunc2(str b) str {   // b: 2
+        arr.str bs              // bs: 3
+        bs += `aaa`
+        return ""
+    }
+
+    str xxxx
+
+    myfunc1("aaa")
+    myfunc2("bbb")
+
+    arr.str bbb
+    bbb += `bbb`
+    println(bbb[0])
+
+    func get() map.str {
+        map.str mapb
+        mapb[`0`] = `q`
+        mapb[`1`] = `w`
+        return mapb
+    }
+
+    myfunc2("aaa")
+
+    return
+}
+
+运行时报错：
+
+vm execute: DATA    length: 11
+vm execute: INITVARS    count: 1    type: VStr
+vm execute: JMP    label: 1
+vm execute: INITVARS    count: 1    type: VStr
+vm execute: JMP    label: 1
+vm execute: INITVARS    count: 1    type: VStr
+vm execute: PUSHSTR    start:6    end: 9
+vm execute: CALLFUNC    IP:18
+vm execute: GETPARAMS    idx: 1
+vm execute: INITVARS    count: 1    type: VArr
+vm execute: SETVAR    code[i]:1,  Vars[code[i]]:3  Vars_length:[4]
+vm execute: PUSHSTR    start:0    end: 3
+vm execute: APPENDARR    index: 3    Objects length:1
+panic: runtime error: index out of range
+
+APPENDARR指令使用索引3, 在Objects数组中查找array元素，但此时Objects数组内只有1个元素。
+为什么会是索引3, 因为加上了前面3个元素。
+
+
+注意: 这个问题和在编译函数时，在JMP指令前编译参数，还是在JMP指令后编译参数无关。
+因为修改编译时不删除变量和RETFUNC不恢复Vars数组之后，数量上永远是增加，不会减少。
+
+
+
+但是在JMP指令前编译参数和在JMP指令后编译参数，影响了在在函数调用时，是否先使用INITVARS初始化函数的问题。
+在JMP指令后编译参数，会带来函数直到被调用后，才能运行INITVARS初始化参数和函数体内的局部变量。
+在JMP指令前编译参数，虽然会将参数编译，但函数体内的局部变量没初始化，但是在编译时都已经全部初始化并有索引值。
+所以在这是一个新问题。
+
+
+例如下面的代码：
+
+contract testDefS {
+
+    func myfunc1(str a) str {   // a: 0
+        arr.str as              // as: 1
+        as += `aaa`
+        return ""
+    }
+
+
+
+    func myfunc2(str b) str {   // b: 2
+        arr.str bs              // bs: 3
+        bs += `aaa`
+        return ""
+    }
+
+    myfunc1("aaa")
+    myfunc2("bbb")
+
+    arr.str bbb
+    bbb += `bbb`
+    println(bbb[0])
+
+    return
+}
+
+这样的代码没问题，执行不报错。
+
+但是稍微修改一下：
+
+contract testDefS {
+
+    func myfunc1(str a) str {   // a: 0
+        arr.str as              // as: 1
+        as += `aaa`
+        return ""
+    }
+
+    func myfunc2(str b) str {   // b: 2
+        arr.str bs              // bs: 3
+        bs += `aaa`
+        return ""
+    }
+
+    str aaa = myfunc1("aaa")
+    myfunc2("bbb")
+
+    arr.str bbb
+    bbb += `bbb`
+    println(bbb[0])
+
+    return
+}
+
+将myfunc1("aaa")变为str aaa = myfunc("aaa")就报告如下错误：
+
+vm execute: DATA    length: 8
+vm execute: JMP    label: 20
+vm execute: JMP    label: 1
+vm execute: INITVARS    count: 1    type: VStr
+vm execute: SETVAR    code[i]:4  Vars_Length:[1]  index failed!!!
+2019/06/26 18:41:37 vm.Run failed:SETVAR index failed!
+
+SETVAR报错，期望使用索引4, 但我们发现目前只使用INITVARS指令建立了1个元素。

@@ -137,8 +137,8 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 			如果类型是合约， 则其中的data{}会被当作Block的参数.
 			如果类型是函数， 进入到这里表明已经在处理函数体， 而函数的参数和返回值在TFunc类型中已经被处理。
 		*/
-		varsCount := uint16(len(cmpl.Contract.Vars)) // 当前合约内所有的变量(var声明和函数参数)
-		funcsCount := len(cmpl.Contract.Funcs)       // 当前合约的所有函数
+		//varsCount := uint16(len(cmpl.Contract.Vars)) // 当前合约内所有的变量(var声明和函数参数)
+		//funcsCount := len(cmpl.Contract.Funcs)       // 当前合约的所有函数
 		cmpl.Blocks = append(cmpl.Blocks, node)
 		pars := node.Value.(*parser.NBlock).Params // 当前Block代码的参数数量
 		// 如果参数数量大于0 (进入到次分支， 说明正在编译contract的data结构。函数的Block不会进入此分支.
@@ -177,13 +177,14 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 		//		delete(cmpl.Contract.Vars, key)
 		//	}
 		//}
-		if funcsCount < len(cmpl.Contract.Funcs) {
-			// Remove funcs
-			for i := funcsCount; i < len(cmpl.Contract.Funcs); i++ {
-				delete(*cmpl.NameSpace, getFuncKey(cmpl.Contract.Funcs[i]))
-			}
-			cmpl.Contract.Funcs = cmpl.Contract.Funcs[:funcsCount]
-		}
+
+		//if funcsCount < len(cmpl.Contract.Funcs) {
+		//	// Remove funcs
+		//	for i := funcsCount; i < len(cmpl.Contract.Funcs); i++ {
+		//		delete(*cmpl.NameSpace, getFuncKey(cmpl.Contract.Funcs[i]))
+		//	}
+		//	cmpl.Contract.Funcs = cmpl.Contract.Funcs[:funcsCount]
+		//}
 
 	case parser.TContract:
 		cmpl.Contract.Name = node.Value.(*parser.NContract).Name
@@ -479,6 +480,7 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 		cmpl.Append(rt.JMP, 0)           // 在代码中插入JMP, 0指令
 		finfo.Offset = start + 2         // 函数代码在
 		cmpl.InFunc = true               // 设置"在函数中"标志为true
+
 
 		// 初始化函数参数: 在code数组中插入[INITVARS, 类型长度，类型列表]
 		// 为函数调用前做准备

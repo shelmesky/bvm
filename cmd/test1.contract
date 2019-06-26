@@ -14,21 +14,12 @@ contract testDefS {
         return ""
     }
 
-    myfunc1("aaa")
+    str aaa = myfunc1("aaa")
     myfunc2("bbb")
 
     arr.str bbb
     bbb += `bbb`
     println(bbb[0])
-
-    func get() map.str {
-        map.str mapb
-        mapb[`0`] = `q`
-        mapb[`1`] = `w`
-        return mapb
-    }
-
-    map.str aaa = get()
 
     return
 }

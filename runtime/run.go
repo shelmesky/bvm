@@ -72,7 +72,7 @@ func (rt *Runtime) Run(code []Bcode, params []int64, gasLimit int64) (string, in
 	}
 	newCount()
 	defer delCount(true)
-	Vars := make([]int64, 0, 32)
+	Vars := make([]int64, 0, 1024)
 	stack := make([]int64, 100) // 运行栈
 	pars := make([]int64, 0, 32)
 	calls := make([]int64, 1000)
