@@ -537,3 +537,103 @@ VM代码在修改后，一个函数调用，运行CALLFUNC和RETFUNC指令后，
 
 目前编译时，将Contract.Vars这个MAP当作符号表，但是在指令中或者其他结构中，并没有保存这个表。
 只能靠指令中的INITVARS指令建立符号表。
+
+---------------------------------------------------------------------------------------------------------------------
+
+提前初始化所有变量，这样的代码是可运行的：
+
+contract testDefS {
+
+ arr.str bbb
+    bbb += `bbb`
+    println(bbb[0])
+
+    println("xxxxxxxxx")
+
+    func myfunc1(str a) str {   // a: 0
+        println(a)
+        arr.str as              // as: 1
+        as += `aaa`
+        return ""
+    }
+
+
+
+    func myfunc2(str b) str {   // b: 2
+        arr.str bs              // bs: 3
+        bs += `aaa`
+        return ""
+    }
+
+    myfunc1("xxx")
+
+    return
+}
+
+
+但下面的代码无法运行：
+
+contract testDefS {
+
+    func myfunc1(str a) str {   // a: 0
+        arr.str as              // as: 1
+        as += `aaa`
+        return ""
+    }
+
+
+
+    func myfunc2(str b) str {   // b: 2
+        arr.str bs              // bs: 3
+        bs += `aaa`
+        return ""
+    }
+
+    myfunc1("xxx")
+
+    arr.str bbb
+    bbb += `bbb`
+    println(bbb[0])
+
+    return
+}
+
+报错：
+vm execute: DATA    length: 6
+vm execute: JMP    label: 14
+vm execute: JMP    label: 6
+vm execute: PUSHSTR    start:6    end: 9
+vm execute: CALLFUNC    IP:10
+vm execute: GETPARAMS    idx: 1
+vm execute: SETVAR    code[i]:1,  Vars[code[i]]:1  Vars_length:[5]
+vm execute: PUSHSTR    start:0    end: 3
+vm execute: APPENDARR    index: 1    Objects length:5
+vm execute: PUSHSTR    start:3    end: 3
+vm execute: RETFUNC
+vm execute: SETVAR    code[i]:4,  Vars[code[i]]:7  Vars_length:[5]
+vm execute: PUSHSTR    start:9    end: 12
+vm execute: APPENDARR    index: 7    Objects length:5
+panic: runtime error: index out of range
+
+为什么APPENDARR    index: 7这个指令的参数是7, 是因为它前面的GETPARAMS指令，行为是把栈顶的参数放在Vars的顶端。
+为什么GETPARAMS可以放在顶端，因为修改前GETPARAMS前面应该有个INITVARS指令，这个指令把新建的变量索引放在Vars顶端。
+所以从这个角度说没问题。
+
+即INITVARS指令的执行，要和其上下文指令相关。不能单独出现。
+
+GETPARAMS的参数是数量，参数不是Vars数组中的索引。所以它只能让INITVARS指令把刚初始化好的参数，放在Vars顶端。
+
+目前GETPARAMS的参数应该是GETPARAMS count index1 index2 ...
+
+
+对于运行时Vars数组的使用，设计到以下几个指令：
+SETVAR
+GETVAR
+GETPARAMS
+LOADPARS
+CALLFUNC
+RETFUNC
+
+SETVAR GETVAR会根据编译时变量出现的索引操作变量。
+
+而剩下的指令则根据目前Vars的长度操作。

@@ -14,6 +14,8 @@ contract testDefS {
         return ""
     }
 
+    myfunc1("xxx")
+
     arr.str bbb
     bbb += `bbb`
     println(bbb[0])

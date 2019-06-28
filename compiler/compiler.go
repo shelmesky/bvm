@@ -173,6 +173,7 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 
 		//vinfo.Index >= varsCount说明在进入Block编译后，比进入Block之前多了很多变量，这些变量是Block内的变量
 		//应该在contract.Vars中删除这些局部变量?
+		// 只是为了确保局部变量名称不和全局变量冲突，可以不删除，只要确保不重名即可
 		// Remove vars
 
 		//for key, _ := range cmpl.Contract.Vars {

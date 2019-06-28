@@ -77,44 +77,90 @@ func (rt *Runtime) Run(contract *Contract, code []Bcode, params []int64, gasLimi
 	pars := make([]int64, 0, 32)
 	calls := make([]int64, 1000)
 
-	for idx, value := range contract.VarsList {
+	for _, value := range contract.VarsList {
 		var v int64
-		fmt.Printf("init vars for: %d ", idx)
+
 		Type := value.Type & 0xf
-		switch Type { // code[i+2+iVar]保存的是需要初始化的变量的类型
+
+		switch Type {
 		case parser.VStr:
-			fmt.Printf("type: VStr    ")
-			rt.Strings = append(rt.Strings, ``) // 空字符串
+			rt.Strings = append(rt.Strings, ``)
 			v = int64(len(rt.Strings) - 1)
-		case parser.VArr:
-			fmt.Printf("type: VArr    ")
-			rt.Objects = append(rt.Objects, []int64{}) // 空64位整形数组
-			v = int64(len(rt.Objects) - 1)
-		case parser.VMap:
-			fmt.Printf("type: VMap    ")
-			rt.Objects = append(rt.Objects, map[string]int64{}) // 空map
-			v = int64(len(rt.Objects) - 1)
-		case parser.VMoney:
-			fmt.Printf("type: VMoney    ")
-			rt.Objects = append(rt.Objects, decimal.New(0, 0)) // 空的Money类型
-			v = int64(len(rt.Objects) - 1)
-		case parser.VBytes:
-			fmt.Printf("type: VBytes    ")
-			rt.Objects = append(rt.Objects, []byte{}) // 空的字节数组类型
-			v = int64(len(rt.Objects) - 1)
-		case parser.VFile:
-			fmt.Printf("type: VFile    ")
-			rt.Objects = append(rt.Objects, types.NewFile()) //空的文件类型
-			v = int64(len(rt.Objects) - 1)
+			Vars = append(Vars, v)
+		case parser.VInt:
+			Vars = append(Vars, 0)
 		default:
-			fmt.Printf("type: Int    ")
+			rt.Strings = append(rt.Strings, ``)
+			v = int64(len(rt.Strings) - 1)
 		}
 
-		fmt.Printf("\n")
 
-		Vars = append(Vars, v)
+		switch Type {
+		case parser.VStr:
+			rt.Objects = append(rt.Objects, ``)
+			v = int64(len(rt.Objects) - 1)
+		case parser.VArr:
+			rt.Objects = append(rt.Objects, []int64{}) // 空64位整形数组
+			v = int64(len(rt.Objects) - 1)
+			Vars = append(Vars, v)
+		case parser.VMap:
+			rt.Objects = append(rt.Objects, map[string]int64{}) // 空map
+			v = int64(len(rt.Objects) - 1)
+			Vars = append(Vars, v)
+		case parser.VMoney:
+			rt.Objects = append(rt.Objects, decimal.New(0, 0)) // 空的Money类型
+			v = int64(len(rt.Objects) - 1)
+			Vars = append(Vars, v)
+		case parser.VBytes:
+			rt.Objects = append(rt.Objects, []byte{}) // 空的字节数组类型
+			v = int64(len(rt.Objects) - 1)
+			Vars = append(Vars, v)
+		case parser.VFile:
+			rt.Objects = append(rt.Objects, types.NewFile()) //空的文件类型
+			v = int64(len(rt.Objects) - 1)
+			Vars = append(Vars, v)
+		}
 	}
 
+	/*
+		for idx, value := range contract.VarsList {
+			var v int64
+			fmt.Printf("init vars for: %d ", idx)
+			Type := value.Type & 0xf
+			switch Type { // code[i+2+iVar]保存的是需要初始化的变量的类型
+			case parser.VStr:
+				fmt.Printf("type: VStr    ")
+				rt.Strings = append(rt.Strings, ``) // 空字符串
+				v = int64(len(rt.Strings) - 1)
+			case parser.VArr:
+				fmt.Printf("type: VArr    ")
+				rt.Objects = append(rt.Objects, []int64{}) // 空64位整形数组
+				v = int64(len(rt.Objects) - 1)
+			case parser.VMap:
+				fmt.Printf("type: VMap    ")
+				rt.Objects = append(rt.Objects, map[string]int64{}) // 空map
+				v = int64(len(rt.Objects) - 1)
+			case parser.VMoney:
+				fmt.Printf("type: VMoney    ")
+				rt.Objects = append(rt.Objects, decimal.New(0, 0)) // 空的Money类型
+				v = int64(len(rt.Objects) - 1)
+			case parser.VBytes:
+				fmt.Printf("type: VBytes    ")
+				rt.Objects = append(rt.Objects, []byte{}) // 空的字节数组类型
+				v = int64(len(rt.Objects) - 1)
+			case parser.VFile:
+				fmt.Printf("type: VFile    ")
+				rt.Objects = append(rt.Objects, types.NewFile()) //空的文件类型
+				v = int64(len(rt.Objects) - 1)
+			default:
+				fmt.Printf("type: Int    ")
+			}
+
+			fmt.Printf("\n")
+
+			Vars = append(Vars, v)
+		}
+	*/
 
 	// top the latest value
 	if code[0] == DATA {
@@ -291,10 +337,11 @@ main:
 			DebugPrintf("DUP\n")
 
 		case GETVAR:
-			DebugPrintf("GETVAR    Vars_index: %d\n", code[i])
+
 			i++
 			top++
 			a := code[i]
+			DebugPrintf("GETVAR    Vars_index: %d\n", code[i])
 			b := Vars[a]
 			stack[top] = b
 
@@ -305,7 +352,7 @@ main:
 			i++
 			top++
 			a := code[i]
-			if int(a) > len(Vars) - 1 {
+			if int(a) > len(Vars)-1 {
 				DebugPrintf("SETVAR    code[i]:%d  Vars_Length:[%d]  index failed!!!\n", a, len(Vars))
 				return ``, gas, fmt.Errorf("SETVAR index failed!\n")
 			}
@@ -541,9 +588,9 @@ main:
 
 		case RETFUNC:
 			DebugPrintf("RETFUNC\n")
-			a := coff - 1
-			b := calls[a]
-			Vars = Vars[:b] // 恢复Vars数组
+			//a := coff - 1
+			//b := calls[a]
+			//Vars = Vars[:b] // 恢复Vars数组
 			coff -= 2
 			i = calls[coff] // 恢复指令指针
 			continue
