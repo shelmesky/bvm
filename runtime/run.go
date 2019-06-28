@@ -502,9 +502,9 @@ main:
 
 		case RETFUNC:
 			DebugPrintf("RETFUNC\n")
-			//a := coff - 1
-			//b := calls[a]
-			//Vars = Vars[:b] // 恢复Vars数组
+			a := coff - 1
+			b := calls[a]
+			Vars = Vars[:b] // 恢复Vars数组
 			coff -= 2
 			i = calls[coff] // 恢复指令指针
 			continue

@@ -14,9 +14,6 @@ contract testDefS {
         return ""
     }
 
-    str aaa = myfunc1("aaa")
-    myfunc2("bbb")
-
     arr.str bbb
     bbb += `bbb`
     println(bbb[0])
