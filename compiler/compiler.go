@@ -100,13 +100,16 @@ func (cmpl *compiler) InitVars(node *parser.Node, vars []parser.NVar) error {
 			return cmpl.Error(v.Type, errInvalidType)
 		}
 		types[i] = rt.Bcode(vType)
-		cmpl.Contract.Vars[v.Name] = rt.VarInfo{
+
+		rtInfo := rt.VarInfo{
 			Index: uint16(len(cmpl.Contract.Vars)),
 			Type:  uint16(vType),
 		}
+		cmpl.Contract.Vars[v.Name] = rtInfo
+		cmpl.Contract.VarsList = append(cmpl.Contract.VarsList, rtInfo)
 	}
-	cmpl.Append(rt.INITVARS, rt.Bcode(len(types)))
-	cmpl.Append(types...)
+	//cmpl.Append(rt.INITVARS, rt.Bcode(len(types)))
+	//cmpl.Append(types...)
 	for _, v := range vars {
 		if v.Exp != nil {
 			if err := nodeToCode(v.Exp, cmpl); err != nil {
@@ -172,11 +175,11 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 		//应该在contract.Vars中删除这些局部变量?
 		// Remove vars
 
-		for key, _ := range cmpl.Contract.Vars {
-			if vinfo.Index >= varsCount {
-				delete(cmpl.Contract.Vars, key)
-			}
-		}
+		//for key, _ := range cmpl.Contract.Vars {
+		//	if vinfo.Index >= varsCount {
+		//		delete(cmpl.Contract.Vars, key)
+		//	}
+		//}
 
 		if funcsCount < len(cmpl.Contract.Funcs) {
 			// Remove funcs

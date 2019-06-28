@@ -42,7 +42,7 @@ func DebugPrintf(formatString string, a ...interface{}) {
 }
 
 // Run executes a bytecode
-func (rt *Runtime) Run(code []Bcode, params []int64, gasLimit int64) (string, int64, error) {
+func (rt *Runtime) Run(contract *Contract, code []Bcode, params []int64, gasLimit int64) (string, int64, error) {
 	var (
 		i, top, gas, coff int64
 		result            string
@@ -76,6 +76,45 @@ func (rt *Runtime) Run(code []Bcode, params []int64, gasLimit int64) (string, in
 	stack := make([]int64, 100) // 运行栈
 	pars := make([]int64, 0, 32)
 	calls := make([]int64, 1000)
+
+	for idx, value := range contract.VarsList {
+		var v int64
+		fmt.Printf("init vars for: %d ", idx)
+		Type := value.Type & 0xf
+		switch Type { // code[i+2+iVar]保存的是需要初始化的变量的类型
+		case parser.VStr:
+			fmt.Printf("type: VStr    ")
+			rt.Strings = append(rt.Strings, ``) // 空字符串
+			v = int64(len(rt.Strings) - 1)
+		case parser.VArr:
+			fmt.Printf("type: VArr    ")
+			rt.Objects = append(rt.Objects, []int64{}) // 空64位整形数组
+			v = int64(len(rt.Objects) - 1)
+		case parser.VMap:
+			fmt.Printf("type: VMap    ")
+			rt.Objects = append(rt.Objects, map[string]int64{}) // 空map
+			v = int64(len(rt.Objects) - 1)
+		case parser.VMoney:
+			fmt.Printf("type: VMoney    ")
+			rt.Objects = append(rt.Objects, decimal.New(0, 0)) // 空的Money类型
+			v = int64(len(rt.Objects) - 1)
+		case parser.VBytes:
+			fmt.Printf("type: VBytes    ")
+			rt.Objects = append(rt.Objects, []byte{}) // 空的字节数组类型
+			v = int64(len(rt.Objects) - 1)
+		case parser.VFile:
+			fmt.Printf("type: VFile    ")
+			rt.Objects = append(rt.Objects, types.NewFile()) //空的文件类型
+			v = int64(len(rt.Objects) - 1)
+		default:
+			fmt.Printf("type: Int    ")
+		}
+
+		fmt.Printf("\n")
+
+		Vars = append(Vars, v)
+	}
+
 
 	// top the latest value
 	if code[0] == DATA {
@@ -443,7 +482,7 @@ main:
 		case CALLCONTRACT: // 调用其他contract
 			i++
 			top++
-			result, cgas, cerr := rt.Run((*rt.Contracts)[code[i]].Code, pars, gasLimit-gas)
+			result, cgas, cerr := rt.Run((*rt.Contracts)[code[i]], (*rt.Contracts)[code[i]].Code, pars, gasLimit-gas)
 			if isParContract {
 				delCount(false)
 				isParContract = false

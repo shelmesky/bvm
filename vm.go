@@ -259,7 +259,7 @@ func (vm *VM) Run(cnt *runtime.Contract, data runtime.IData) (string, int64, err
 		params = append(params, int64(vi.Index))
 		params = append(params, val)
 	}
-	return rt.Run(cnt.Code, params, vm.Settings.GasLimit)
+	return rt.Run(cnt, cnt.Code, params, vm.Settings.GasLimit)
 }
 
 // RunByName executes the contract

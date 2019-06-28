@@ -124,13 +124,14 @@ type FuncInfo struct {
 
 // Contract contains information about the contract
 type Contract struct {
-	ID     int64 // External id
-	Name   string
-	Read   bool
-	Code   []Bcode
-	Vars   map[string]VarInfo
-	Funcs  []*FuncInfo
-	Params map[string]VarInfo
+	ID       int64 // External id
+	Name     string
+	Read     bool
+	Code     []Bcode
+	Vars     map[string]VarInfo
+	VarsList []VarInfo
+	Funcs    []*FuncInfo
+	Params   map[string]VarInfo
 }
 
 type EnvItem struct {
