@@ -86,23 +86,26 @@ func (cmpl *compiler) ConditionCode(node *parser.Node) (before int, after int, e
 2. 函数定义中的参数列表。
 3. 声明一个变量。
 */
-func (cmpl *compiler) InitVars(node *parser.Node, vars []parser.NVar) error {
+func (cmpl *compiler) InitVars(node *parser.Node, vars []parser.NVar) ([]rt.Bcode, error) {
+	var idxList []rt.Bcode
 	if len(vars) == 0 {
-		return nil
+		return idxList, nil
 	}
 	types := make([]rt.Bcode, len(vars))
 	for i, v := range vars {
 		if _, ok := cmpl.Contract.Vars[v.Name]; ok {
-			return cmpl.ErrorParam(node, errVarExists, v.Name)
+			return idxList, cmpl.ErrorParam(node, errVarExists, v.Name)
 		}
 		vType := v.Type.Value.(*parser.NType).Type
 		if vType == parser.VVoid {
-			return cmpl.Error(v.Type, errInvalidType)
+			return idxList, cmpl.Error(v.Type, errInvalidType)
 		}
 		types[i] = rt.Bcode(vType)
 
+		idx := uint16(len(cmpl.Contract.Vars))
+		idxList = append(idxList, rt.Bcode(idx))
 		rtInfo := rt.VarInfo{
-			Index: uint16(len(cmpl.Contract.Vars)),
+			Index: idx,
 			Type:  uint16(vType),
 		}
 		cmpl.Contract.Vars[v.Name] = rtInfo
@@ -113,11 +116,11 @@ func (cmpl *compiler) InitVars(node *parser.Node, vars []parser.NVar) error {
 	for _, v := range vars {
 		if v.Exp != nil {
 			if err := nodeToCode(v.Exp, cmpl); err != nil {
-				return err
+				return idxList, err
 			}
 		}
 	}
-	return nil
+	return idxList, nil
 }
 
 func nodeToCode(node *parser.Node, cmpl *compiler) error {
@@ -147,7 +150,7 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 		// 如果参数数量大于0 (进入到次分支， 说明正在编译contract的data结构。函数的Block不会进入此分支.
 		// 因为函数的参数已经在TFunc类型中处理。
 		if len(pars) > 0 {
-			if err = cmpl.InitVars(node, pars); err != nil { // 初始化变量， 生成INITVARS指令.
+			if _, err := cmpl.InitVars(node, pars); err != nil { // 初始化变量， 生成INITVARS指令.
 				return err
 			}
 			cmpl.Contract.Params = make(map[string]rt.VarInfo) // 初始化contract的参数
@@ -353,7 +356,7 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 		}
 
 	case parser.TVars: // 定义新的变量，例如 str a，或赋值str a = "aaa"
-		if err = cmpl.InitVars(node, node.Value.(*parser.NVars).Vars); err != nil {
+		if _, err = cmpl.InitVars(node, node.Value.(*parser.NVars).Vars); err != nil {
 			return err
 		}
 
@@ -487,7 +490,8 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 
 		// 初始化函数参数: 在code数组中插入[INITVARS, 类型长度，类型列表]
 		// 为函数调用前做准备
-		if err = cmpl.InitVars(node, nFunc.Params); err != nil {
+		var idxList []rt.Bcode
+		if idxList, err = cmpl.InitVars(node, nFunc.Params); err != nil {
 			return err
 		}
 
@@ -495,6 +499,7 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 		// 这个指令会在函数执行之前从栈中获取每个参数的值，将这些值复制给之前初始化的参数
 		if len(nFunc.Params) > 0 {
 			cmpl.Append(rt.GETPARAMS, rt.Bcode(len(nFunc.Params)))
+			cmpl.Append(idxList...)
 		}
 
 		// 生成函数体指令

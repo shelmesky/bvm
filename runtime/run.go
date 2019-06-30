@@ -94,7 +94,6 @@ func (rt *Runtime) Run(contract *Contract, code []Bcode, params []int64, gasLimi
 			v = int64(len(rt.Strings) - 1)
 		}
 
-
 		switch Type {
 		case parser.VStr:
 			rt.Objects = append(rt.Objects, ``)
@@ -395,15 +394,17 @@ main:
 			DebugPrintf("\n")
 
 		case ASSIGNINT:
+			DebugPrintf("ASSIGNINT\n")
 			*(*int64)(unsafe.Pointer(uintptr(stack[top-1]))) = stack[top]
 			top -= 2
-			DebugPrintf("ASSIGNINT\n")
+
 
 		case ASSIGNSTR:
+			// TODO: 实现不完整
+			DebugPrintf("ASSIGNSTR\n")
 			rt.Strings = append(rt.Strings, rt.Strings[stack[top]])
 			*(*int64)(unsafe.Pointer(uintptr(stack[top-1]))) = int64(len(rt.Strings) - 1)
 			top -= 2
-			DebugPrintf("ASSIGNSTR\n")
 
 		case ASSIGNADDINT:
 			*(*int64)(unsafe.Pointer(uintptr(stack[top-1]))) += stack[top]
@@ -574,12 +575,23 @@ main:
 			// 栈上保存的是调用函数前PUSH指令放到栈上的参数索引
 			// 参数可能在
 			i++
-			for k := 1; k <= int(code[i]); k++ {
-				a := len(Vars) - k
-				Vars[a] = stack[top]
+			count := int(code[i])
+
+			DebugPrintf("GETPARAMS    count: %d\n", count)
+
+			for j := 0; j < count; j++ {
+				i++
+				idx := code[i]
+				Vars[idx] = stack[top]
 				top--
 			}
-			DebugPrintf("GETPARAMS    idx: %d\n", code[i])
+			/*
+				for k := 1; k <= int(code[i]); k++ {
+					a := len(Vars) - k
+					Vars[a] = stack[top]
+					top--
+				}
+			*/
 
 		case RETURN:
 			DebugPrintf("RETURN\n")

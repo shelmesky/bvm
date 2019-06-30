@@ -643,3 +643,93 @@ SETVAR GETVAR会根据编译时变量出现的索引操作变量。
 不执行INITVARS不建立符号表
 编译时变量的索引都是增长的，但执行是RETFUNC每执行一个函数调用就会恢复Vars数组。
 
+---------------------------------------------------------------------------------------------------------------------
+
+contract testDefS {
+
+    func myfunc1(str a) str {   // a: 0
+        arr.str as              // as: 1
+        as += `aaa`
+        return "this myfunc1..."
+    }
+
+    str xxx = myfunc1("xxx")
+    println(xxx)
+
+    arr.str bbb
+    bbb += `bbb`
+    println(bbb[0])
+
+    return
+}
+
+解决了GETPARAMS参数的问题，目前出现了ASSIGNSTR不能赋值问题:
+
+vm execute: DATA    length: 12
+vm execute: JMP    label: 2
+vm execute: SETVAR    code[i]:2,  Vars[code[i]]:4  Vars_length:[4]
+vm execute: PUSHSTR    start:18    end: 21
+vm execute: CALLFUNC    IP:16
+vm execute: GETPARAMS    count: 1
+vm execute: SETVAR    code[i]:1,  Vars[code[i]]:1  Vars_length:[4]
+vm execute: PUSHSTR    start:0    end: 3
+vm execute: APPENDARR    index: 1    Objects length:4
+vm execute: PUSHSTR    start:3    end: 18
+vm execute: RETFUNC
+vm execute: ASSIGNSTR
+vm execute: GETVAR    Vars_index: 2
+contract:
+vm execute: CUSTOMFUNC    name: println    args_count:1
+vm execute: SETVAR    code[i]:3,  Vars[code[i]]:3  Vars_length:[4]
+vm execute: PUSHSTR    start:21    end: 24
+vm execute: APPENDARR    index: 3    Objects length:4
+vm execute: GETVAR    Vars_index: 3
+vm execute: PUSH16    0
+vm execute: GETINDEX
+contract: bbb
+vm execute: CUSTOMFUNC    name: println    args_count:1
+vm execute: RETURN
+
+PUSHSTR 将return "this myfunc1..."字符串放到栈顶
+RETFUNC 返回
+ASSIGNSTR根据指令刚开始SERVAR指令设置的变量xxx在Vars数组中的索引地址，设置其值为新的字符串在Strings中的索引。
+但不知为何没有设置成功。
+
+且如果在代码中加上一句在函数内打印，ASSIGNSTR还会报另外一种错误：
+
+contract testDefS {
+
+    func myfunc1(str a) str {   // a: 0
+        println(a)
+        arr.str as              // as: 1
+        as += `aaa`
+        return "this myfunc1..."
+    }
+
+    str xxx = myfunc1("xxx")
+    println(xxx)
+
+    arr.str bbb
+    bbb += `bbb`
+    println(bbb[0])
+
+    return
+}
+
+vm execute: DATA    length: 12
+vm execute: JMP    label: 2
+vm execute: SETVAR    code[i]:2,  Vars[code[i]]:4  Vars_length:[4]
+vm execute: PUSHSTR    start:18    end: 21
+vm execute: CALLFUNC    IP:16
+vm execute: GETPARAMS    count: 1
+vm execute: GETVAR    Vars_index: 0
+contract: xxx
+vm execute: CUSTOMFUNC    name: println    args_count:1
+vm execute: SETVAR    code[i]:1,  Vars[code[i]]:1  Vars_length:[4]
+vm execute: PUSHSTR    start:0    end: 3
+vm execute: APPENDARR    index: 1    Objects length:4
+vm execute: PUSHSTR    start:3    end: 18
+vm execute: RETFUNC
+vm execute: ASSIGNSTR
+panic: runtime error: invalid memory address or nil pointer dereference
+[signal SIGSEGV: segmentation violation code=0x1 addr=0x6 pc=0x53daea]
