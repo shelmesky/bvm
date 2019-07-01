@@ -350,18 +350,6 @@ main:
 			// 本质是获取Vars数组中某个项的值
 			i++
 			top++
-			/*
-				a := code[i]
-				if int(a) > len(Vars)-1 {
-					DebugPrintf("SETVAR    code[i]:%d  Vars_Length:[%d]  index failed!!!\n", a, len(Vars))
-					return ``, gas, fmt.Errorf("SETVAR index failed!\n")
-				}
-				b := Vars[a]
-				DebugPrintf("SETVAR    code[i]:%d,  Vars[code[i]]:%d  Vars_length:[%d]\n", a, b, len(Vars))
-				c := &b
-				stack[top] = int64(uintptr(unsafe.Pointer(c)))
-			*/
-
 			a := code[i]
 			b := Vars[a]
 			DebugPrintf("SETVAR    code[i]:%d,  Vars[code[i]]:%d  Vars_length:[%d]\n", a, b, len(Vars))
@@ -459,16 +447,16 @@ main:
 			i++
 			eFunc := rt.Funcs[code[i]]                    // runtime中保存的函数对象
 			parCount := int64(len(eFunc.Params))          // 函数的参数数量
-			parsFunc := make([]reflect.Value, parCount+1) // 用户保存参数的列表
+			parsFunc := make([]reflect.Value, parCount+1) // 用于保存[用户提供的参数]的列表
 			top -= parCount
-			parsFunc[0] = reflect.ValueOf(rt.Data) // 第一个参数
+			parsFunc[0] = reflect.ValueOf(rt.Data) // 将第一个参数强行设置为rt.Data
 			for k := int64(0); k < parCount; k++ { // 从栈中获取每个参数的索引
 				val := stack[top+k+1]
 				switch eFunc.Params[k] {
 				case parser.VStr:
-					parsFunc[k+1] = reflect.ValueOf(rt.Strings[val]) // 在字符串表中获取对象
+					parsFunc[k+1] = reflect.ValueOf(rt.Strings[val]) // 在Strings表中获取对象，保存到parsFunc
 				case parser.VObject, parser.VMoney:
-					parsFunc[k+1] = reflect.ValueOf(rt.Objects[val]) // 在对象表中获取对象
+					parsFunc[k+1] = reflect.ValueOf(rt.Objects[val]) // 在Objects表中获取对象
 				case parser.VFloat:
 					parsFunc[k+1] = reflect.ValueOf(*(*float64)(unsafe.Pointer(&val))) // 解析浮点数
 				case parser.VBool:
@@ -490,23 +478,25 @@ main:
 					return ``, gas, result[len(result)-1].Interface().(error)
 				}
 			}
-			top++
-			// 根据函数预定义的返回值类型， 将执行结果转换为对应的类型，再将值保存在栈顶
-			switch eFunc.Result {
-			case parser.VVoid:
-			case parser.VInt:
-				stack[top] = result[0].Interface().(int64)
-			case parser.VBool:
-				if result[0].Interface().(bool) {
-					stack[top] = 1
-				} else {
-					stack[top] = 0
+			if eFunc.Result != parser.VVoid {
+				top++
+				// 根据函数预定义的返回值类型， 将执行结果转换为对应的类型，再将值保存在栈顶
+				switch eFunc.Result {
+				case parser.VVoid:
+				case parser.VInt:
+					stack[top] = result[0].Interface().(int64)
+				case parser.VBool:
+					if result[0].Interface().(bool) {
+						stack[top] = 1
+					} else {
+						stack[top] = 0
+					}
+				case parser.VStr:
+					rt.Strings = append(rt.Strings, result[0].Interface().(string))
+					stack[top] = int64(len(rt.Strings) - 1)
+				default:
+					return ``, gas, fmt.Errorf(errRetType, eFunc.Name)
 				}
-			case parser.VStr:
-				rt.Strings = append(rt.Strings, result[0].Interface().(string))
-				stack[top] = int64(len(rt.Strings) - 1)
-			default:
-				return ``, gas, fmt.Errorf(errRetType, eFunc.Name)
 			}
 
 			DebugPrintf("CUSTOMFUNC    name: %s    args_count:%d\n", eFunc.Name, len(eFunc.Params))
@@ -657,7 +647,7 @@ main:
 			ind := *c
 			DebugPrintf("APPENDARR    index: %d    Objects length:%d\n", ind, len(rt.Objects))
 			rt.Objects[ind] = append(rt.Objects[ind].([]int64), stack[top])
-			top -= 2
+			top -= 2 // 出栈2, APPENDARR前面是SETVAR和PUSHSTR指令，这个两个指令分别保存2个元素到栈顶.
 
 		case GETINDEX:
 			switch v := rt.Objects[stack[top-1]].(type) {

@@ -134,7 +134,7 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 		return nil
 	}
 
-	fmt.Printf("compile node type: %s\n", parser.GetNodeType(node.Type))
+	//fmt.Printf("compile node type: %s\n", parser.GetNodeType(node.Type))
 
 	switch node.Type {
 	case parser.TBlock: // 编译代码块

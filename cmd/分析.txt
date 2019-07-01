@@ -733,3 +733,26 @@ vm execute: RETFUNC
 vm execute: ASSIGNSTR
 panic: runtime error: invalid memory address or nil pointer dereference
 [signal SIGSEGV: segmentation violation code=0x1 addr=0x6 pc=0x53daea]
+
+下面是函数的调用过程：
+
+top = 1
+vm execute: PUSHSTR    start:18    end: 21  // top++: 2
+vm execute: CALLFUNC    IP:16               //
+vm execute: GETPARAMS    count: 1           // top--: 1
+vm execute: GETVAR    Vars_index: 0         // top++: 2
+contract: xxx
+vm execute: CUSTOMFUNC    name: println    args_count:1             // top-=1: 1, top++: 2
+vm execute: SETVAR    code[i]:1,  Vars[code[i]]:1  Vars_length:[4]  // top++: 3
+vm execute: PUSHSTR    start:0    end: 3                            // top++: 4
+vm execute: APPENDARR    index: 1    Objects length:4               // top-=2: 2
+vm execute: PUSHSTR    start:3    end: 18                           // top++: 3
+vm execute: RETFUNC
+vm execute: ASSIGNSTR                                               // top-1: 2
+
+调用函数之前top为1, 整个调用过程中对栈有增长也有收缩，但执行RETFUNC后，top只增加了1, 即函数返回的值，如果有的话。
+RETFUNC之前调用的那个PUSH指令将返回的结果放在栈顶。
+
+而ASSIGN类的指令，即将栈顶的值赋值给Vars数组中的某个索引。
+比如PUSH类指令将字面值放在栈顶，而GETVAR将Vars数组中的某个索引放在栈顶。
+

@@ -1,10 +1,18 @@
 contract testDefS {
 
     func myfunc1(str a) str {   // a: 0
+        str x = testFunc(a, 100)
         arr.str as              // as: 1
         as += `aaa`
         return "this myfunc1..."
     }
+
+    func myfunc2(int b) int {
+        return b
+    }
+
+    int ret = myfunc2(100)
+    println(str(ret))
 
     str xxx = myfunc1("xxx")
     println(xxx)
