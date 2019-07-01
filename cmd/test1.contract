@@ -1,7 +1,6 @@
 contract testDefS {
 
     func myfunc1(str a) str {   // a: 0
-        println(a)
         arr.str as              // as: 1
         as += `aaa`
         return "this myfunc1..."

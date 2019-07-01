@@ -350,15 +350,22 @@ main:
 			// 本质是获取Vars数组中某个项的值
 			i++
 			top++
+			/*
+				a := code[i]
+				if int(a) > len(Vars)-1 {
+					DebugPrintf("SETVAR    code[i]:%d  Vars_Length:[%d]  index failed!!!\n", a, len(Vars))
+					return ``, gas, fmt.Errorf("SETVAR index failed!\n")
+				}
+				b := Vars[a]
+				DebugPrintf("SETVAR    code[i]:%d,  Vars[code[i]]:%d  Vars_length:[%d]\n", a, b, len(Vars))
+				c := &b
+				stack[top] = int64(uintptr(unsafe.Pointer(c)))
+			*/
+
 			a := code[i]
-			if int(a) > len(Vars)-1 {
-				DebugPrintf("SETVAR    code[i]:%d  Vars_Length:[%d]  index failed!!!\n", a, len(Vars))
-				return ``, gas, fmt.Errorf("SETVAR index failed!\n")
-			}
 			b := Vars[a]
 			DebugPrintf("SETVAR    code[i]:%d,  Vars[code[i]]:%d  Vars_length:[%d]\n", a, b, len(Vars))
-			c := &b
-			stack[top] = int64(uintptr(unsafe.Pointer(c)))
+			stack[top] = int64(uintptr(unsafe.Pointer(&Vars[code[i]])))
 
 		case JMP:
 			i += int64(int16(code[i+1]))
@@ -398,12 +405,15 @@ main:
 			*(*int64)(unsafe.Pointer(uintptr(stack[top-1]))) = stack[top]
 			top -= 2
 
-
 		case ASSIGNSTR:
 			// TODO: 实现不完整
 			DebugPrintf("ASSIGNSTR\n")
 			rt.Strings = append(rt.Strings, rt.Strings[stack[top]])
-			*(*int64)(unsafe.Pointer(uintptr(stack[top-1]))) = int64(len(rt.Strings) - 1)
+			idx := stack[top-1]
+			a := uintptr(idx)
+			b := unsafe.Pointer(a)
+			c := (*int64)(b)
+			*c = int64(len(rt.Strings) - 1)
 			top -= 2
 
 		case ASSIGNADDINT:
