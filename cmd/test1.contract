@@ -1,4 +1,10 @@
 contract testDefS {
+    data {
+      str Action
+      str From
+      str To
+      str Amount
+    }
 
     func myfunc1(str a) str {   // a: 0
         str x = testFunc(a, 100)
@@ -20,6 +26,15 @@ contract testDefS {
     arr.str bbb
     bbb += `bbb`
     println(bbb[0])
+
+    map.str m1
+    m1[`cccc`] = "dddd"
+    println(m1[`cccc`])
+
+    println(Action)
+    println(From)
+    println(To)
+    println(Amount)
 
     return
 }

@@ -114,16 +114,22 @@ func main() {
 	data := myData{
 		Env: []interface{}{7, 1, `0122afcd34`},
 		Params: map[string]interface{}{
-			`pInt`:   "123",
-			`pStr`:   `OK`,
-			`pMoney`: `32562365237623`,
-			`pBool`:  `false`,
-			`pFloat`: `23.834`,
-			`pBytes`: `31325f`,
-			`bBytes`: []byte{33, 39, 0x5b, 0},
-			`fFile`:  types.FileInit(`myfile.txt`, `text`, []byte{45, 47, 00, 32}),
+			/*
+				`pInt`:   "123",
+				`pStr`:   `OK`,
+				`pMoney`: `32562365237623`,
+				`pBool`:  `false`,
+				`pFloat`: `23.834`,
+				`pBytes`: `31325f`,
+				`bBytes`: []byte{33, 39, 0x5b, 0},
+				`fFile`:  types.FileInit(`myfile.txt`, `text`, []byte{45, 47, 00, 32}),
 
-			`s1`: `s1s1s1s1s1s1s1`,
+			*/
+
+			`Action`: "111",
+			`From`:   "222",
+			`To`:     "333",
+			`Amount`: "444",
 		},
 	}
 
