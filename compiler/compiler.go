@@ -135,6 +135,7 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 	}
 
 	//fmt.Printf("compile node type: %s\n", parser.GetNodeType(node.Type))
+	//fmt.Println(node.Line, node.Column)
 
 	switch node.Type {
 	case parser.TBlock: // 编译代码块
@@ -143,7 +144,7 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 			如果类型是合约， 则其中的data{}会被当作Block的参数.
 			如果类型是函数， 进入到这里表明已经在处理函数体， 而函数的参数和返回值在TFunc类型中已经被处理。
 		*/
-		varsCount := uint16(len(cmpl.Contract.Vars)) // 当前合约内所有的变量(var声明和函数参数)
+		//varsCount := uint16(len(cmpl.Contract.Vars)) // 当前合约内所有的变量(var声明和函数参数)
 		funcsCount := len(cmpl.Contract.Funcs)       // 当前合约的所有函数
 		cmpl.Blocks = append(cmpl.Blocks, node)
 		pars := node.Value.(*parser.NBlock).Params // 当前Block代码的参数数量
@@ -169,10 +170,10 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 
 		cmpl.Blocks = cmpl.Blocks[:len(cmpl.Blocks)-1]
 
-		if uint16(len(cmpl.Contract.Vars)) != varsCount &&
-			cmpl.Contract.Code[len(cmpl.Contract.Code)-1] != rt.RETFUNC {
-			cmpl.Append(rt.DELVARS, rt.Bcode(varsCount))
-		}
+		//if uint16(len(cmpl.Contract.Vars)) != varsCount &&
+		//	cmpl.Contract.Code[len(cmpl.Contract.Code)-1] != rt.RETFUNC {
+		//	cmpl.Append(rt.DELVARS, rt.Bcode(varsCount))
+		//}
 
 		//vinfo.Index >= varsCount说明在进入Block编译后，比进入Block之前多了很多变量，这些变量是Block内的变量
 		//应该在contract.Vars中删除这些局部变量?

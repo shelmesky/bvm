@@ -440,7 +440,7 @@ main:
 			calls[coff+1] = int64(len(Vars)) //在coff+1处保存Vars数组的长度
 			coff += 2                        // coff变量+2
 			i += int64(int16(code[i+1]))     // 为函数调用修改变量指针地址
-			DebugPrintf("CALLFUNC    IP:%d\n", i)
+			DebugPrintf("CALLFUNC    IP: [%d]    top: [%d]\n", i, top)
 			continue
 
 		case CUSTOMFUNC: // 调用用户自定义函数
@@ -599,7 +599,7 @@ main:
 			break main
 
 		case RETFUNC:
-			DebugPrintf("RETFUNC\n")
+			DebugPrintf("RETFUNC    top: [%d]\n", top)
 			//a := coff - 1
 			//b := calls[a]
 			//Vars = Vars[:b] // 恢复Vars数组

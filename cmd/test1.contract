@@ -17,6 +17,14 @@ contract testDefS {
         return b
     }
 
+    func myfunc3(int c, int d) {
+        str mmm = `hello mmm`
+        println(mmm)
+        println("this is myfunc3")
+    }
+
+    myfunc3(200, 300)
+
     int ret = myfunc2(100)
     println(str(ret))
 
