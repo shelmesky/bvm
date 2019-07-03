@@ -756,3 +756,31 @@ RETFUNC之前调用的那个PUSH指令将返回的结果放在栈顶。
 而ASSIGN类的指令，即将栈顶的值赋值给Vars数组中的某个索引。
 比如PUSH类指令将字面值放在栈顶，而GETVAR将Vars数组中的某个索引放在栈顶。
 
+---------------------------------------------------------------------------------------------------------------------
+
+vm execute: JMP    label: 200
+vm execute: PUSH16    200
+vm execute: PUSH16    300
+vm execute: CALLFUNC    IP: [67]    top: [2]
+vm execute: GETPARAMS    count: 2
+vm execute: SETVAR    code[i]:10,  Vars[code[i]]:13  Vars_length:[15]
+vm execute: PUSHSTR    start:18    end: 27
+vm execute: ASSIGNSTR
+vm execute: GETVAR    Vars_index: 10
+contract: hello mmm
+vm execute: CUSTOMFUNC    name: println    args_count:1
+vm execute: PUSHSTR    start:27    end: 42
+contract: this is myfunc3
+vm execute: CUSTOMFUNC    name: println    args_count:1
+vm execute: RETFUNC    top: [0]
+vm execute: SETVAR    code[i]:11,  Vars[code[i]]:0  Vars_length:[15]
+vm execute: PUSH16    100
+vm execute: CALLFUNC    IP: [59]    top: [2]
+vm execute: GETPARAMS    count: 1
+vm execute: GETVAR    Vars_index: 7
+vm execute: RETFUNC    top: [2]
+vm execute: ASSIGNINT
+
+在CALLFUNC和RETFUNC之间，如果函数没有返回值，那么top仅增长1.
+应该在CALLFUNC开始之前，即函数入栈之前保存top，退出函数后恢复top.
+

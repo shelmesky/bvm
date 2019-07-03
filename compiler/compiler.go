@@ -145,7 +145,7 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 			如果类型是函数， 进入到这里表明已经在处理函数体， 而函数的参数和返回值在TFunc类型中已经被处理。
 		*/
 		//varsCount := uint16(len(cmpl.Contract.Vars)) // 当前合约内所有的变量(var声明和函数参数)
-		funcsCount := len(cmpl.Contract.Funcs)       // 当前合约的所有函数
+		funcsCount := len(cmpl.Contract.Funcs) // 当前合约的所有函数
 		cmpl.Blocks = append(cmpl.Blocks, node)
 		pars := node.Value.(*parser.NBlock).Params // 当前Block代码的参数数量
 		// 如果参数数量大于0 (进入到次分支， 说明正在编译contract的data结构。函数的Block不会进入此分支.
@@ -194,30 +194,30 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 			cmpl.Contract.Funcs = cmpl.Contract.Funcs[:funcsCount]
 		}
 
-	case parser.TContract:
+	case parser.TContract: // contract关键字
 		cmpl.Contract.Name = node.Value.(*parser.NContract).Name
 		cmpl.Contract.Read = node.Value.(*parser.NContract).Read
 		if err = nodeToCode(node.Value.(*parser.NContract).Block, cmpl); err != nil {
 			return err
 		}
-	case parser.TReturn:
+	case parser.TReturn: // return关键字
 		var vtype uint32
 		expr := node.Value.(*parser.NReturn).Expr
-		if expr != nil {
+		if expr != nil { // 如果return含有表达式
 			if err = nodeToCode(expr, cmpl); err != nil {
 				return err
 			}
 			vtype = expr.Result
 		}
-		if cmpl.InFunc {
+		if cmpl.InFunc { // 如果当前在函数中
 			if vtype != uint32(cmpl.RetFunc) {
-				if cmpl.RetFunc == parser.VVoid {
-					return cmpl.Error(node, errNotReturn)
+				if cmpl.RetFunc == parser.VVoid { // 如果函数的返回类型是空
+					return cmpl.Error(node, errNotReturn) // 报告此函数不应该返回值
 				}
-				if vtype == parser.VVoid {
-					return cmpl.Error(node, errFuncReturn)
+				if vtype == parser.VVoid { // 如果返回值是空
+					return cmpl.Error(node, errFuncReturn) // 报告此函数必须返回一个值
 				}
-				return cmpl.ErrorParam(node, errReturnType, Type2Str(uint32(cmpl.RetFunc)))
+				return cmpl.ErrorParam(node, errReturnType, Type2Str(uint32(cmpl.RetFunc))) // 报告返回类型错误
 			}
 			cmpl.Append(rt.RETFUNC)
 		} else {
