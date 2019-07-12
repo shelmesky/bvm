@@ -77,11 +77,15 @@ func (rt *Runtime) Run(contract *Contract, code []Bcode, params []int64, gasLimi
 	pars := make([]int64, 0, 32)
 	calls := make([]int64, 1000)
 
+	// 先建立所有变量的符号表
+	// 无须等到运行时再建立
 	for _, value := range contract.VarsList {
 		var v int64
 
 		Type := value.Type & 0xf
 
+		// 由于字符串和非字符串变量(array, map等)不在同一个符号表中
+		// 下面两个switch让Strings和Vars符号表的数量保持一致
 		switch Type {
 		case parser.VStr:
 			rt.Strings = append(rt.Strings, ``)
@@ -570,10 +574,11 @@ main:
 			DebugPrintf("PARCONTRACT\n")
 
 		case GETPARAMS:
+			// GETPARAMS是CALLFUNC之后的指令，CALLFUNC之前是PUSH类指令，将函数的实际参数入栈
+			// GETPARAMS count [index list]
+			// index list是变量在Vars数组中的索引，编译时根据变量添加的顺序得到
 			// code[i]是参数的数量
-			// 将N个从栈复制到Vars数组中
-			// 栈上保存的是调用函数前PUSH指令放到栈上的参数索引
-			// 参数可能在
+			// 将N个参数从栈中复制到Vars数组中
 			i++
 			count := int(code[i])
 

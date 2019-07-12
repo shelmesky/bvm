@@ -111,6 +111,9 @@ func (cmpl *compiler) InitVars(node *parser.Node, vars []parser.NVar) ([]rt.Bcod
 		cmpl.Contract.Vars[v.Name] = rtInfo
 		cmpl.Contract.VarsList = append(cmpl.Contract.VarsList, rtInfo)
 	}
+
+	// 不生成INITVARS指令，即不依靠INITVARS指令建立变量的符号表
+	// 而是在字节码运行之前，先建立符号表
 	//cmpl.Append(rt.INITVARS, rt.Bcode(len(types)))
 	//cmpl.Append(types...)
 	for _, v := range vars {
@@ -496,8 +499,9 @@ func nodeToCode(node *parser.Node, cmpl *compiler) error {
 			return err
 		}
 
-		// 如果函数有参数，则插入[GETPARAMS, 参数长度]指令
+		// 如果函数有参数，则插入[GETPARAMS, 参数长度, 类型列表]指令
 		// 这个指令会在函数执行之前从栈中获取每个参数的值，将这些值复制给之前初始化的参数
+		// idxList是变量在编译和运行时的索引，编译和运行时索引要保持一致
 		if len(nFunc.Params) > 0 {
 			cmpl.Append(rt.GETPARAMS, rt.Bcode(len(nFunc.Params)))
 			cmpl.Append(idxList...)
