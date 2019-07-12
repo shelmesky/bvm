@@ -159,7 +159,7 @@ file  			return l.char(T_FILE)
 					lval.s = lval.s[:len(lval.s)-1]
 					return l.char(CALLCONTRACT)
 				}
-{index}	{
+{INDEX}	{
 					lval.s = string(l.TokenBytes(nil))
 					lval.s = lval.s[:len(lval.s)-1]
 					return l.char(INDEX)

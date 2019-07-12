@@ -167,8 +167,8 @@ rettype
 
 statements
     : /*empty*/ { $$ = nil }
-    | statements NEWLINE { $$ = $1 }
-    | statements switch { $$ = addStatement($1, $2, yylex)}
+    | statements NEWLINE { $$ = $1 }	// 语句列表 新行
+    | statements switch { $$ = addStatement($1, $2, yylex)}	// 语句列表 switch语句
     | statements statement NEWLINE { $$ = addStatement($1, $2, yylex)}
     ;
 
@@ -216,29 +216,29 @@ switch
     ;
 
 statement 
-    : var ASSIGN expr { $$ = newBinary($1, $3, ASSIGN, yylex) }
-    | var ADD_ASSIGN expr { $$ = newBinary($1, $3, ADD_ASSIGN, yylex); }
-    | var SUB_ASSIGN expr { $$ = newBinary($1, $3, SUB_ASSIGN, yylex); }
-    | var MUL_ASSIGN expr { $$ = newBinary($1, $3, MUL_ASSIGN, yylex); }
-    | var DIV_ASSIGN expr { $$ = newBinary($1, $3, DIV_ASSIGN, yylex); }
-    | var MOD_ASSIGN expr { $$ = newBinary($1, $3, MOD_ASSIGN, yylex); } 
-    | index ASSIGN expr { $$ = newBinary($1, $3, ASSIGN, yylex) }
-    | type IDENT ASSIGN expr { $$ = newBinary( newVarDecl( $1, []string{$2}, yylex ), $4, ASSIGN, yylex) }
-    | type ident_list { $$ = newVarDecl( $1, $2, yylex )}
-    | IF expr LBRACE statements RBRACE elif else { $$ = newIf( $2, $4, $6, $7, yylex )}
-    | BREAK { $$ = newBreak(yylex); }
-    | CONTINUE { $$ = newContinue(yylex); }
-    | RETURN { $$ = newReturn(nil, yylex); }
-    | RETURN expr { $$ = newReturn($2, yylex); }
-    | WHILE expr LBRACE statements RBRACE { $$ = newWhile( $2, $4, yylex )}
-    | FUNC CALL par_declarations RPAREN rettype LBRACE statements RBRACE { 
+    : var ASSIGN expr { $$ = newBinary($1, $3, ASSIGN, yylex) }	// xxx = 表达式
+    | var ADD_ASSIGN expr { $$ = newBinary($1, $3, ADD_ASSIGN, yylex); }	// xxx += 表达式
+    | var SUB_ASSIGN expr { $$ = newBinary($1, $3, SUB_ASSIGN, yylex); }	// xxx -= 表达式
+    | var MUL_ASSIGN expr { $$ = newBinary($1, $3, MUL_ASSIGN, yylex); }	// xxx += 表达式
+    | var DIV_ASSIGN expr { $$ = newBinary($1, $3, DIV_ASSIGN, yylex); }	// xxx /= 表达式
+    | var MOD_ASSIGN expr { $$ = newBinary($1, $3, MOD_ASSIGN, yylex); } 	// xxx %= 表达式
+    | index ASSIGN expr { $$ = newBinary($1, $3, ASSIGN, yylex) }		// xxx[yyy] = 表达式
+    | type IDENT ASSIGN expr { $$ = newBinary( newVarDecl( $1, []string{$2}, yylex ), $4, ASSIGN, yylex) }	// str xxx = 表达式
+    | type ident_list { $$ = newVarDecl( $1, $2, yylex )}	// str aaa,bbb,ccc
+    | IF expr LBRACE statements RBRACE elif else { $$ = newIf( $2, $4, $6, $7, yylex )}	// if(表达式) { 语句... } elif else
+    | BREAK { $$ = newBreak(yylex); }	//  break
+    | CONTINUE { $$ = newContinue(yylex); }	// continue
+    | RETURN { $$ = newReturn(nil, yylex); }	// return
+    | RETURN expr { $$ = newReturn($2, yylex); }	// return 表达式
+    | WHILE expr LBRACE statements RBRACE { $$ = newWhile( $2, $4, yylex )}	// while 表达式 { 语句... }
+    | FUNC CALL par_declarations RPAREN rettype LBRACE statements RBRACE { 	// func xxx( str aaa, int bbb) int { 语句... }
            $$ = newFunc($2, $3, $5, $7, yylex)
            }
-    | CALL params RPAREN { $$ = newCallFunc($1, $2, yylex);}
-    | CALLCONTRACT cntparams RPAREN { $$ = newCallContract($1, $2, yylex);}
-    | FOR IDENT IN expr LBRACE statements RBRACE { $$ = newFor( $2, $4, $6, yylex )}
-    | FOR IDENT COMMA IDENT IN expr LBRACE statements RBRACE { $$ = newForAll( $2, $4, $6, $8, yylex )}
-    | FOR IDENT IN expr DOUBLEDOT expr LBRACE statements RBRACE { $$ = newForInt( $2, $4, $6, $8, yylex )}
+    | CALL params RPAREN { $$ = newCallFunc($1, $2, yylex);}	// xxx(表达式)
+    | CALLCONTRACT cntparams RPAREN { $$ = newCallContract($1, $2, yylex);}	// @xxx(key1: 表达式, key2: 表达式)
+    | FOR IDENT IN expr LBRACE statements RBRACE { $$ = newFor( $2, $4, $6, yylex )}	// for x in 表达式 { 语句.. }
+    | FOR IDENT COMMA IDENT IN expr LBRACE statements RBRACE { $$ = newForAll( $2, $4, $6, $8, yylex )}	// for x,y in 表达式 { 语句... }
+    | FOR IDENT IN expr DOUBLEDOT expr LBRACE statements RBRACE { $$ = newForInt( $2, $4, $6, $8, yylex )}	// for x in 表达式 ... 表达式 { 语句... }
     ;
 
 exprlist
@@ -282,20 +282,21 @@ exprobj
     | LBRACKET object RBRACKET { $$ = newObjList($2, yylex);}
 
 
+// 表达式
 expr
-    : LPAREN expr RPAREN { $$ = $2; }
-    | INT { $$ = newValue($1, yylex);}
-    | FLOAT { $$ = newValue($1, yylex);}
-    | STRING { $$ = newValue($1, yylex);}
-    | QSTRING { $$ = newValue($1, yylex);}
-    | TRUE { $$ = newValue(true, yylex);}
-    | FALSE { $$ = newValue(false, yylex);}
-    | CALL params RPAREN { $$ = newCallFunc($1, $2, yylex);}
-    | CALLCONTRACT cntparams RPAREN { $$ = newCallContract($1, $2, yylex);}
-    | index { $$ = $1}
-    | ENV { $$ = newEnv($1, yylex);}
-    | IDENT { $$ = newGetVar($1, yylex);}
-    | OBJ object RBRACE { $$ = $2;}
+    : LPAREN expr RPAREN { $$ = $2; }	// ( 表达式 )
+    | INT { $$ = newValue($1, yylex);}	// 整数
+    | FLOAT { $$ = newValue($1, yylex);}	// 浮点数
+    | STRING { $$ = newValue($1, yylex);}	// "字符串"
+    | QSTRING { $$ = newValue($1, yylex);}	// `字符串`
+    | TRUE { $$ = newValue(true, yylex);}	// true
+    | FALSE { $$ = newValue(false, yylex);}	// false
+    | CALL params RPAREN { $$ = newCallFunc($1, $2, yylex);}	// xxxx( 参数表达式 )
+    | CALLCONTRACT cntparams RPAREN { $$ = newCallContract($1, $2, yylex);}	// @xxx(key1: 表达式, key2: 表达式)
+    | index { $$ = $1}	// xxx[表达式]
+    | ENV { $$ = newEnv($1, yylex);}	// $env1
+    | IDENT { $$ = newGetVar($1, yylex);}	// 变量: xxx
+    | OBJ object RBRACE { $$ = $2;}	// @{
     | LBRACE exprlist RBRACE { $$ = $2;}
     | LBRACE exprmaplist RBRACE { $$ = $2;}
     | QUESTION LPAREN expr COMMA expr COMMA expr RPAREN { $$ = newQuestion($3, $5, $7, yylex);}
@@ -347,21 +348,24 @@ contract_data
     | DATA LBRACE NEWLINE var_declarations NEWLINE RBRACE NEWLINE { $$ = $4 }
     ;
 
-contract_body 
-    : contract_data statements {
+// 合约主体
+contract_body
+    : contract_data statements {	// 合约data 和 语句列表
         $$ = newBlock($1, $2, yylex)
     }
     ;
 
+// 合约read关键字，允许为空
 contract_read
     : /*empty*/ { $$ = false }
     | READ { $$ = true }
     ;
 
-contract_declaration 
-    : CONTRACT IDENT contract_read LBRACE NEWLINE contract_body RBRACE { 
+// 合约声明
+contract_declaration
+    : CONTRACT IDENT contract_read LBRACE NEWLINE contract_body RBRACE { // contract xxx read {换行 合约主体 }
         $$ = newContract($2, $3, $6, yylex)
         setResult(yylex, $$)
         }
-    | contract_declaration NEWLINE
+    | contract_declaration NEWLINE	// 递归定义
     ;  

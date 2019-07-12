@@ -6,9 +6,9 @@ contract testDefS {
       str Amount
     }
 
-    func myfunc1(str a) str {   // a: 0
+    func myfunc1(str a) str {
         str x = testFunc(a, 100)
-        arr.str as              // as: 1
+        arr.str as
         as += `aaa`
         return "this myfunc1..."
     }
@@ -43,6 +43,12 @@ contract testDefS {
     println(From)
     println(To)
     println(Amount)
+
+    int i = 0
+    while i<10 {
+        println(str(i))
+        i += 1
+    }
 
     return
 }
