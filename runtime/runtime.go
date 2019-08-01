@@ -130,7 +130,7 @@ type Contract struct {
 	Code     []Bcode
 	Vars     map[string]VarInfo
 	VarsList []VarInfo
-	Funcs    []*FuncInfo
+	Funcs    []*FuncInfo	// 保存函数信息的表，编译时和运行时都会使用
 	Params   map[string]VarInfo
 }
 

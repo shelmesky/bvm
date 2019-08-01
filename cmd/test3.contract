@@ -1,0 +1,13 @@
+contract mycnt {
+    bytes mybytes
+    obj myobj = @{"a": "b", "c": mybytes}
+    str jsonstr = JSONEncode(myobj)
+    println(jsonstr)
+
+    obj newobj = JSONDecode(jsonstr)
+
+    str myjson = `{"aaa": "bbb"}`
+    obj obj1 = JSONDecode(myjson)
+    str value = GetString(obj1, "aaa")
+    println(value)
+}

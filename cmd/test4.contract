@@ -1,0 +1,6 @@
+contract mycnt {
+
+    arr.str myarr
+    myarr += 123
+    println(myarr[0])
+}

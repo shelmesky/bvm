@@ -122,6 +122,10 @@ func (rt *Runtime) Run(contract *Contract, code []Bcode, params []int64, gasLimi
 			rt.Objects = append(rt.Objects, types.NewFile()) //空的文件类型
 			v = int64(len(rt.Objects) - 1)
 			Vars = append(Vars, v)
+		case parser.VObject:
+			rt.Objects = append(rt.Objects, types.NewMap())
+			v = int64(len(rt.Objects) - 1)
+			Vars = append(Vars, v)
 		}
 	}
 
@@ -351,7 +355,6 @@ main:
 		case SETVAR:
 			// 将code[i]值作为索引在Vars中寻找
 			// 并将Vars[x]当作变量取其地址， 将地址放在栈顶
-			// 本质是获取Vars数组中某个项的值
 			i++
 			top++
 			a := code[i]
@@ -450,6 +453,7 @@ main:
 		case CUSTOMFUNC: // 调用用户自定义函数
 			i++
 			eFunc := rt.Funcs[code[i]]                    // runtime中保存的函数对象
+			DebugPrintf("CUSTOMFUNC    name: %s    args_count:%d\n", eFunc.Name, len(eFunc.Params))
 			parCount := int64(len(eFunc.Params))          // 函数的参数数量
 			parsFunc := make([]reflect.Value, parCount+1) // 用于保存[用户提供的参数]的列表
 			top -= parCount
@@ -502,8 +506,6 @@ main:
 					return ``, gas, fmt.Errorf(errRetType, eFunc.Name)
 				}
 			}
-
-			DebugPrintf("CUSTOMFUNC    name: %s    args_count:%d\n", eFunc.Name, len(eFunc.Params))
 
 		case EMBEDFUNC: // 内置函数调用
 			i++
