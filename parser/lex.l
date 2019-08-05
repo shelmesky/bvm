@@ -16,18 +16,18 @@ func (l *lexer) scan(lval *yySymType) lex.Char {
 	c := l.Enter()
 %}
 
-hexint	    	0[xX][0-9a-fA-F]+
-digit			[0-9]|{unicodeDigit}
-int				[0-9]+
-float			{int}\.[0-9]+
-identifier		{letter}({letter}|{digit})*
-env             ${identifier}
-callcontract    @{identifier}\(
-call    		{identifier}\(
-index           {identifier}\[
-string 			\"([^\\"]|\\.)*\"
-qstring 		`([^`])*`
-letter			[_a-zA-Z]|{unicodeLetter}
+hexint	    	0[xX][0-9a-fA-F]+       // 十六进制数
+digit			[0-9]|{unicodeDigit}    // 数字
+int				[0-9]+                  // 整数
+float			{int}\.[0-9]+           // 浮点数
+identifier		{letter}({letter}|{digit})* // 标识符
+env             ${identifier}               // 环境变量
+callcontract    @{identifier}\(             // 合约调用
+call    		{identifier}\(              // 函数调用
+index           {identifier}\[              // 索引(arr或map)
+string 			\"([^\\"]|\\.)*\"           // 字符串
+qstring 		`([^`])*`                   // 引用字符串
+letter			[_a-zA-Z]|{unicodeLetter}   // 单个字符
 unicodeDigit	\x81
 unicodeLetter	\x80
 
